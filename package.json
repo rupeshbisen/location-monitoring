@@ -1,0 +1,19 @@
+{
+  "name": "location-monitoring",
+  "version": "1.0.0",
+  "description": "Location monitoring application with route tracking and playback controls",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js"
+  },
+  "keywords": [
+    "location",
+    "tracking",
+    "maps",
+    "monitoring",
+    "routes"
+  ],
+  "author": "",
+  "license": "MIT"
+}

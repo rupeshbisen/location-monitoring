@@ -164,16 +164,6 @@ function displayAllMarkers() {
     
     const bounds = new google.maps.LatLngBounds();
     
-    // Group locations by routeId
-    const routeGroups = {};
-    locationData.forEach((location, index) => {
-        const routeId = location.routeId || 'default';
-        if (!routeGroups[routeId]) {
-            routeGroups[routeId] = [];
-        }
-        routeGroups[routeId].push({ location, index });
-    });
-    
     // Create markers and collect paths for each route
     const routePaths = {};
     
@@ -210,12 +200,12 @@ function displayAllMarkers() {
     
     // Draw separate polyline for each route
     const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
-    let colorIndex = 0;
+    let routeIndex = 0;
     
     Object.keys(routePaths).forEach(routeId => {
         const path = routePaths[routeId];
-        const color = colors[colorIndex % colors.length];
-        colorIndex++;
+        const color = colors[routeIndex % colors.length];
+        routeIndex++;
         
         const polyline = new google.maps.Polyline({
             path: path,

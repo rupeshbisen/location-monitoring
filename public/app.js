@@ -1,7 +1,7 @@
 // Global variables
 let map;
 let markers = [];
-let polyline;
+let polylines = []; // Changed from single polyline to array of polylines
 let locationData = [];
 let currentPlaybackIndex = 0;
 let playbackInterval;
@@ -153,10 +153,9 @@ function clearMap() {
     markers.forEach(marker => marker.setMap(null));
     markers = [];
     
-    if (polyline) {
-        polyline.setMap(null);
-        polyline = null;
-    }
+    // Clear all polylines
+    polylines.forEach(polyline => polyline.setMap(null));
+    polylines = [];
 }
 
 // Display all markers on the map
@@ -164,12 +163,29 @@ function displayAllMarkers() {
     if (locationData.length === 0) return;
     
     const bounds = new google.maps.LatLngBounds();
-    const path = [];
+    
+    // Group locations by routeId
+    const routeGroups = {};
+    locationData.forEach((location, index) => {
+        const routeId = location.routeId || 'default';
+        if (!routeGroups[routeId]) {
+            routeGroups[routeId] = [];
+        }
+        routeGroups[routeId].push({ location, index });
+    });
+    
+    // Create markers and collect paths for each route
+    const routePaths = {};
     
     locationData.forEach((location, index) => {
         const position = { lat: location.lat, lng: location.lng };
-        path.push(position);
         bounds.extend(position);
+        
+        const routeId = location.routeId || 'default';
+        if (!routePaths[routeId]) {
+            routePaths[routeId] = [];
+        }
+        routePaths[routeId].push(position);
         
         // Create marker with custom icon based on flag
         const marker = new google.maps.Marker({
@@ -192,14 +208,25 @@ function displayAllMarkers() {
         markers.push(marker);
     });
     
-    // Draw polyline connecting all points
-    polyline = new google.maps.Polyline({
-        path: path,
-        geodesic: true,
-        strokeColor: '#667eea',
-        strokeOpacity: 0.8,
-        strokeWeight: 3,
-        map: map
+    // Draw separate polyline for each route
+    const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
+    let colorIndex = 0;
+    
+    Object.keys(routePaths).forEach(routeId => {
+        const path = routePaths[routeId];
+        const color = colors[colorIndex % colors.length];
+        colorIndex++;
+        
+        const polyline = new google.maps.Polyline({
+            path: path,
+            geodesic: true,
+            strokeColor: color,
+            strokeOpacity: 0.8,
+            strokeWeight: 3,
+            map: map
+        });
+        
+        polylines.push(polyline);
     });
     
     // Fit map to show all markers

@@ -2,6 +2,8 @@
 let map;
 let markers = [];
 let polyline;
+let polylineSegments = []; // Multiple polyline segments for road-snapped paths
+let gapPolylines = []; // Dashed red lines for gaps (OFF segments)
 let locationData = [];
 let waypoints = [];
 let routePath = []; // Actual road path from Directions API
@@ -200,6 +202,37 @@ function clearMap() {
     
     if (polyline) {
         polyline.setMap(null);
+    
+    // Clear polyline segments
+    polylineSegments.forEach(segment => {
+        if (segment && segment.setMap) {
+            segment.setMap(null);
+        }
+    });
+    polylineSegments = [];
+    
+    // Clear gap polylines
+    gapPolylines.forEach(gap => {
+        if (gap && gap.setMap) {
+            gap.setMap(null);
+        }
+    });
+    gapPolylines = [];
+    
+    // Clear traveled polyline
+    if (traveledPolyline) {
+        traveledPolyline.setMap(null);
+        traveledPolyline = null;
+    }
+    
+    // Clear vehicle marker
+    if (vehicleMarker) {
+        vehicleMarker.setMap(null);
+        vehicleMarker = null;
+    }
+    
+    // Clear route path
+    routePath = [];
         polyline = null;
     }
 }
@@ -214,14 +247,13 @@ async function displayAllMarkers() {
     // Clear the marker index map
     markerIndexMap.clear();
     
-    // Adaptive Marker Downsampling
-    // 1-100 pts: Show all
-    // 100-1000 pts: Show every 10th
-    // 1000+ pts: Show every 200th (handles 10k+ gracefully)
+    // Show ALL markers with numbers (no downsampling)
+    // Note: For very large datasets (1000+), this may impact performance
     const total = locationData.length;
-    const markerStep = total < SMALL_DATASET_THRESHOLD ? 1 : 
-                       total < MEDIUM_DATASET_THRESHOLD ? MEDIUM_DATASET_STEP : 
-                       LARGE_DATASET_STEP;
+    const markerStep = 1; // Show every marker
+    
+    // Separate locations into segments based on provider (similar to Android OFF detection)
+    const segments = processLocationSegments(locationData);
     
     locationData.forEach((location, index) => {
         const position = { lat: location.lat, lng: location.lng };
@@ -234,16 +266,32 @@ async function displayAllMarkers() {
         const isImportantFlag = location.flag === 'check_in' || 
                                location.flag === 'check_out' || 
                                location.flag === 'visit';
-        const shouldShowMarker = (index % markerStep === 0) || isImportantFlag;
+        const isStartOrEnd = index === 0 || index === locationData.length - 1;
+        const shouldShowMarker = (index % markerStep === 0) || isImportantFlag || isStartOrEnd;
         
         if (shouldShowMarker) {
-            // Create marker with custom icon based on flag
+            // Determine marker icon - use numbered markers for better tracking
+            let markerIcon;
+            if (index === 0) {
+                // Start marker - Green with "S"
+                markerIcon = createStartEndMarkerIcon('S', '#00C853');
+            } else if (index === locationData.length - 1) {
+                // End marker - Red with "E"
+                markerIcon = createStartEndMarkerIcon('E', '#FF1744');
+            } else {
+                // Numbered marker
+                markerIcon = createNumberedMarkerIcon(index + 1, isImportantFlag);
+            }
+            
+            // Create marker with numbered icon
             const marker = new google.maps.Marker({
                 position: position,
                 map: map,
-                title: location.address || `Point ${index + 1}`,
-                icon: getMarkerIcon(location.flag),
-                animation: null
+                title: `Point ${index + 1}: ${location.address || 'No address'}`,
+                icon: markerIcon,
+                label: null, // Using custom icon instead
+                animation: null,
+                zIndex: isStartOrEnd ? 1000 : (isImportantFlag ? 500 : 100)
             });
             
             // Create info window content
@@ -269,20 +317,209 @@ async function displayAllMarkers() {
         flag: loc.flag
     }));
     
-    // Draw polyline connecting all points (using full path, not downsampled)
-    polyline = new google.maps.Polyline({
-        path: path,
-        geodesic: true,
-        strokeColor: '#667eea',
-        strokeOpacity: 0.8,
-        strokeWeight: 3,
-        map: map
+    // Draw road-snapped polylines for each segment
+    console.log(`Processing ${segments.activeSegments.length} active segments and ${segments.gapSegments.length} gap segments`);
+    
+    // Draw gap segments first (dashed red lines)
+    segments.gapSegments.forEach(gap => {
+        const gapPolyline = new google.maps.Polyline({
+            path: gap,
+            geodesic: true,
+            strokeColor: '#FF0000',
+            strokeOpacity: 0.8,
+            strokeWeight: 6,
+            map: map,
+            zIndex: 50,
+            icons: [{
+                icon: {
+                    path: 'M 0,-1 0,1',
+                    strokeOpacity: 1,
+                    scale: 3
+                },
+                offset: '0',
+                repeat: '15px'
+            }]
+        });
+        gapPolylines.push(gapPolyline);
     });
+    
+    // Draw active segments with road-snapped paths
+    for (const segment of segments.activeSegments) {
+        if (segment.length >= 2) {
+            await fetchDirectionsPath(segment, '#1565C0'); // Blue color like Android
+        }
+    }
+    
+    // Create vehicle marker for playback
+    if (path.length > 0) {
+        createVehicleMarker(path[0]);
+    }
     
     // Fit map to show all markers
     map.fitBounds(bounds);
     
     console.log(`Displayed ${markers.length} markers out of ${total} points (step: ${markerStep})`);
+}
+
+// Process location data into segments (active tracking vs gaps)
+function processLocationSegments(locations) {
+    const activeSegments = [];
+    const gapSegments = [];
+    let currentSegment = [];
+    
+    for (let i = 0; i < locations.length; i++) {
+        const loc = locations[i];
+        const position = { lat: loc.lat, lng: loc.lng };
+        
+        // Check if this is a gap (locationProvider === 'OFF' or significant time gap)
+        const isGap = loc.locationProvider === 'OFF';
+        
+        if (!isGap) {
+            currentSegment.push(position);
+        } else {
+            // End current segment if it has enough points
+            if (currentSegment.length >= 2) {
+                activeSegments.push([...currentSegment]);
+            }
+            
+            // Add gap line from previous point to current
+            if (i > 0) {
+                const prevLoc = locations[i - 1];
+                gapSegments.push([
+                    { lat: prevLoc.lat, lng: prevLoc.lng },
+                    position
+                ]);
+            }
+            
+            currentSegment = [];
+        }
+    }
+    
+    // Don't forget the last segment
+    if (currentSegment.length >= 2) {
+        activeSegments.push(currentSegment);
+    }
+    
+    // If no gaps detected, treat entire path as one segment
+    if (activeSegments.length === 0 && locations.length >= 2) {
+        activeSegments.push(locations.map(loc => ({ lat: loc.lat, lng: loc.lng })));
+    }
+    
+    return { activeSegments, gapSegments };
+}
+
+// Fetch directions path using Google Directions API (similar to Android implementation)
+async function fetchDirectionsPath(points, lineColor) {
+    if (points.length < 2) return;
+    
+    return new Promise((resolve) => {
+        try {
+            const origin = points[0];
+            const destination = points[points.length - 1];
+            
+            // Waypoint limit is 25 total (23 intermediate). Downsample if needed.
+            let waypointsList = [];
+            if (points.length > 2) {
+                const intermediates = points.slice(1, points.length - 1);
+                const step = intermediates.length > 23 ? Math.ceil(intermediates.length / 23) : 1;
+                waypointsList = intermediates
+                    .filter((_, index) => index % step === 0)
+                    .slice(0, 23)
+                    .map(point => ({
+                        location: new google.maps.LatLng(point.lat, point.lng),
+                        stopover: false
+                    }));
+            }
+            
+            const request = {
+                origin: new google.maps.LatLng(origin.lat, origin.lng),
+                destination: new google.maps.LatLng(destination.lat, destination.lng),
+                waypoints: waypointsList,
+                travelMode: google.maps.TravelMode.WALKING,
+                optimizeWaypoints: false
+            };
+            
+            directionsService.route(request, (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    // Extract the path from the directions result
+                    const snappedPath = [];
+                    const route = result.routes[0];
+                    
+                    route.legs.forEach(leg => {
+                        leg.steps.forEach(step => {
+                            step.path.forEach(point => {
+                                snappedPath.push({ lat: point.lat(), lng: point.lng() });
+                            });
+                        });
+                    });
+                    
+                    // Store for playback
+                    routePath = routePath.concat(snappedPath);
+                    
+                    // Draw the road-snapped polyline
+                    const roadPolyline = new google.maps.Polyline({
+                        path: snappedPath,
+                        geodesic: true,
+                        strokeColor: lineColor,
+                        strokeOpacity: 1.0,
+                        strokeWeight: 8,
+                        map: map,
+                        zIndex: 100
+                    });
+                    polylineSegments.push(roadPolyline);
+                    
+                    console.log(`Road-snapped path added with ${snappedPath.length} points`);
+                    resolve();
+                } else {
+                    console.warn(`Directions API failed: ${status}, falling back to straight line`);
+                    drawFallbackPolyline(points, lineColor);
+                    resolve();
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching directions:', error);
+            drawFallbackPolyline(points, lineColor);
+            resolve();
+        }
+    });
+}
+
+// Fallback polyline when Directions API fails
+function drawFallbackPolyline(points, lineColor) {
+    const fallbackPolyline = new google.maps.Polyline({
+        path: points,
+        geodesic: true,
+        strokeColor: lineColor,
+        strokeOpacity: 0.8,
+        strokeWeight: 6,
+        map: map,
+        zIndex: 100
+    });
+    polylineSegments.push(fallbackPolyline);
+    routePath = routePath.concat(points);
+}
+
+// Create vehicle marker for playback
+function createVehicleMarker(position) {
+    if (vehicleMarker) {
+        vehicleMarker.setMap(null);
+    }
+    
+    vehicleMarker = new google.maps.Marker({
+        position: position,
+        map: map,
+        icon: {
+            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+            fillColor: '#4285F4',
+            fillOpacity: 1,
+            strokeColor: '#FFFFFF',
+            strokeWeight: 2,
+            scale: 6,
+            rotation: 0
+        },
+        zIndex: 2000,
+        title: 'Current Position'
+    });
 }
 
 // Get marker icon based on flag
@@ -323,6 +560,98 @@ function getMarkerIcon(flag) {
     };
     
     return icons[flag] || icons['normal'];
+}
+
+// Enhanced marker icon with start/end support (like Android implementation)
+function getMarkerIconEnhanced(flag, index, totalPoints) {
+    // Start marker - Green like Android
+    if (index === 0) {
+        return {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#00C853', // Green
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3,
+            scale: 12
+        };
+    }
+    
+    // End marker - Red like Android
+    if (index === totalPoints - 1) {
+        return {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#FF1744', // Red
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3,
+            scale: 12
+        };
+    }
+    
+    // Use standard icons for other flags
+    return getMarkerIcon(flag);
+}
+
+// Create numbered marker icon (like Android createNumberedMarker)
+function createNumberedMarkerIcon(number, isImportantFlag = false) {
+    const size = 30;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw circle background
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 1, 0, 2 * Math.PI);
+    ctx.fillStyle = isImportantFlag ? '#FFC107' : '#1565C0'; // Yellow for important, Blue for normal
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Draw number text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(number.toString(), size / 2, size / 2);
+    
+    return {
+        url: canvas.toDataURL(),
+        scaledSize: new google.maps.Size(size, size),
+        anchor: new google.maps.Point(size / 2, size / 2)
+    };
+}
+
+// Create start/end marker icon with letter
+function createStartEndMarkerIcon(letter, color) {
+    const size = 36;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw circle background
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 2, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Draw letter text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(letter, size / 2, size / 2);
+    
+    return {
+        url: canvas.toDataURL(),
+        scaledSize: new google.maps.Size(size, size),
+        anchor: new google.maps.Point(size / 2, size / 2)
+    };
 }
 
 // Create info window content

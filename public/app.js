@@ -14,7 +14,7 @@ let directionsService;
 let traveledPolyline = null;
 let vehicleMarker = null;
 let infoWindow = null;
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = '/api';
 
 // Adaptive marker downsampling thresholds
 const SMALL_DATASET_THRESHOLD = 100;
@@ -258,15 +258,6 @@ async function displayAllMarkers() {
             markerIndexMap.set(index, markers.length);
             markers.push(marker);
         }
-        // Create info window
-        const infoWindowContent = createInfoWindowContent(location, index);
-        
-        marker.addListener('click', () => {
-            infoWindow.setContent(infoWindowContent);
-            infoWindow.open(map, marker);
-        });
-        
-        markers.push(marker);
     });
     
     // Store waypoints for playback

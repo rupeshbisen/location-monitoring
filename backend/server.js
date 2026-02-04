@@ -4,11 +4,11 @@ const path = require('path');
 const url = require('url');
 
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'sample_location_data.json');
+const DATA_FILE = path.join(__dirname, 'location_data.json');
 
-// Initialize data file if it doesn't exist
-if (!fs.existsSync(DATA_FILE)) {
-    const initialData = {
+// Create empty data structure
+function createEmptyData(message = 'Route data loaded successfully') {
+    return {
         status: 'success',
         data: [],
         total: 0,
@@ -20,9 +20,13 @@ if (!fs.existsSync(DATA_FILE)) {
             start_time: null,
             end_time: null
         },
-        message: 'Route data loaded successfully'
+        message
     };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
+}
+
+// Initialize data file if it doesn't exist
+if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(createEmptyData(), null, 2));
 }
 
 // Helper function to read raw location data
@@ -31,18 +35,8 @@ function readRawLocationData() {
         const data = fs.readFileSync(DATA_FILE, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        return { locations: [] };
+        return createEmptyData();
     }
-}
-
-function getStorageFormat(rawData) {
-    if (rawData && Array.isArray(rawData.data)) {
-        return 'array';
-    }
-    if (rawData && Array.isArray(rawData.locations)) {
-        return 'locations';
-    }
-    return 'locations';
 }
 
 function parseTimestamp(value) {
@@ -65,78 +59,62 @@ function parseTimestamp(value) {
 }
 
 function normalizeLocationData(rawData) {
-    const format = getStorageFormat(rawData);
-    if (format === 'array') {
-        const locations = rawData.data.map((row, index) => {
-            const lat = Number(row[0]);
-            const lng = Number(row[1]);
-            const address = row[2] || '';
-            const routeId = row[6] || 'default_route';
-            const timestamp = parseTimestamp(row[7]);
-            const flagRaw = row[9] || 'normal';
-            const allowedFlags = ['check_in', 'check_out', 'visit', 'normal'];
-            const flag = allowedFlags.includes(flagRaw) ? flagRaw : 'normal';
-
-            return {
-                id: index + 1,
-                lat,
-                lng,
-                timestamp,
-                routeId,
-                flag,
-                address
-            };
-        });
-
-        return { locations, format, rawData };
+    if (!rawData || !Array.isArray(rawData.data)) {
+        return { locations: [], rawData };
     }
+    
+    const locations = rawData.data.map((row, index) => {
+        const flagRaw = row[9] || 'normal';
+        const allowedFlags = ['check_in', 'check_out', 'visit', 'normal'];
+        
+        return {
+            id: index + 1,
+            lat: Number(row[0]),
+            lng: Number(row[1]),
+            address: row[2] || '',
+            routeId: row[6] || 'default_route',
+            timestamp: parseTimestamp(row[7]),
+            flag: allowedFlags.includes(flagRaw) ? flagRaw : 'normal'
+        };
+    });
 
-    return {
-        locations: Array.isArray(rawData.locations) ? rawData.locations : [],
-        format,
-        rawData
-    };
+    return { locations, rawData };
+}
+
+// Update stats after data change
+function updateStats(rawData, timestamp) {
+    const count = rawData.data.length;
+    rawData.total = count;
+    rawData.showing = count;
+    if (rawData.stats) {
+        rawData.stats.total_points = count;
+        rawData.stats.start_time = rawData.stats.start_time || timestamp;
+        rawData.stats.end_time = timestamp;
+    }
 }
 
 function appendLocationToRaw(rawData, locationPoint) {
-    const format = getStorageFormat(rawData);
-    if (format === 'array') {
-        const timestamp = typeof locationPoint.timestamp === 'string'
-            ? locationPoint.timestamp
-            : parseTimestamp(locationPoint.timestamp);
+    const timestamp = typeof locationPoint.timestamp === 'string'
+        ? locationPoint.timestamp
+        : parseTimestamp(locationPoint.timestamp);
 
-        const row = [
-            locationPoint.lat,
-            locationPoint.lng,
-            locationPoint.address || '',
-            '-',
-            '-',
-            null,
-            locationPoint.routeId || 'default_route',
-            timestamp,
-            '.',
-            locationPoint.flag || 'normal'
-        ];
+    const row = [
+        locationPoint.lat,
+        locationPoint.lng,
+        locationPoint.address || '',
+        '-',
+        '-',
+        null,
+        locationPoint.routeId || 'default_route',
+        timestamp,
+        '.',
+        locationPoint.flag || 'normal'
+    ];
 
-        rawData.data = Array.isArray(rawData.data) ? rawData.data : [];
-        rawData.data.push(row);
-
-        if (typeof rawData.total === 'number') {
-            rawData.total = rawData.data.length;
-        }
-        if (typeof rawData.showing === 'number') {
-            rawData.showing = rawData.data.length;
-        }
-        if (rawData.stats && typeof rawData.stats === 'object') {
-            rawData.stats.total_points = rawData.data.length;
-            rawData.stats.start_time = rawData.stats.start_time || timestamp;
-            rawData.stats.end_time = timestamp;
-        }
-        return rawData;
-    }
-
-    rawData.locations = Array.isArray(rawData.locations) ? rawData.locations : [];
-    rawData.locations.push(locationPoint);
+    rawData.data = rawData.data || [];
+    rawData.data.push(row);
+    updateStats(rawData, timestamp);
+    
     return rawData;
 }
 
@@ -149,6 +127,38 @@ function readLocationData() {
 // Helper function to write location data
 function writeLocationData(data) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+// Generate sample tracking data for demo/testing
+function generateSampleData() {
+    const baseTime = new Date('2026-01-12T09:20:00');
+    const baseLat = 21.0894;
+    const baseLng = 79.0910;
+    const routes = ['Sandeep', 'Rupesh'];
+    const data = [];
+    
+    routes.forEach(routeId => {
+        for (let i = 0; i < 20; i++) {
+            const time = new Date(baseTime.getTime() + i * 30000); // 30 sec intervals
+            const lat = baseLat + (Math.random() - 0.5) * 0.01;
+            const lng = baseLng + (Math.random() - 0.5) * 0.01;
+            
+            data.push([
+                lat, lng, '', '-', '-', null, routeId,
+                time.toISOString(), '.', 'normal'
+            ]);
+        }
+    });
+    
+    const result = createEmptyData('Sample data generated');
+    result.data = data;
+    result.total = data.length;
+    result.showing = data.length;
+    result.stats.total_points = data.length;
+    result.stats.start_time = data[0][7];
+    result.stats.end_time = data[data.length - 1][7];
+    
+    return result;
 }
 
 // CORS headers
@@ -296,48 +306,16 @@ const server = http.createServer((req, res) => {
     }
     // API: Clear all data (for testing)
     else if (pathname === '/api/clear' && req.method === 'POST') {
-        const rawData = readRawLocationData();
-        const format = getStorageFormat(rawData);
-
-        if (format === 'array') {
-            rawData.data = [];
-            rawData.total = 0;
-            rawData.showing = 0;
-            if (rawData.stats && typeof rawData.stats === 'object') {
-                rawData.stats.total_points = 0;
-                rawData.stats.start_time = null;
-                rawData.stats.end_time = null;
-            }
-            rawData.message = 'Route data cleared successfully';
-            rawData.status = rawData.status || 'success';
-            writeLocationData(rawData);
-        } else {
-            writeLocationData({ locations: [] });
-        }
-
+        writeLocationData(createEmptyData('Route data cleared successfully'));
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, message: 'All data cleared' }));
     }
     // API: Add sample data (for testing)
     else if (pathname === '/api/sample-data' && req.method === 'POST') {
-        try {
-            const SAMPLE_TEMPLATE_FILE = path.join(__dirname, 'sample_data_template.json');
-            
-            // Read sample data from template file
-            const templateData = JSON.parse(fs.readFileSync(SAMPLE_TEMPLATE_FILE, 'utf8'));
-            
-            // Write the template data to sample_location_data.json
-            writeLocationData(templateData);
-            
-            const count = templateData.data ? templateData.data.length : (templateData.locations ? templateData.locations.length : 0);
-            
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true, message: 'Sample data added', count: count }));
-        } catch (error) {
-            console.error('Error loading sample data:', error);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: false, message: 'Error loading sample data template' }));
-        }
+        const sampleData = generateSampleData();
+        writeLocationData(sampleData);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'Sample data added', count: sampleData.data.length }));
     }
     // Serve static files from public directory
     else if (req.method === 'GET') {

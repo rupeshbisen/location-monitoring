@@ -427,7 +427,7 @@ async function fetchDirectionsPath(points, lineColor) {
                     .slice(0, 23)
                     .map(point => ({
                         location: new google.maps.LatLng(point.lat, point.lng),
-                        stopover: false
+                        stopover: true  // Must be true to ensure route passes through each waypoint
                     }));
             }
             
@@ -435,8 +435,8 @@ async function fetchDirectionsPath(points, lineColor) {
                 origin: new google.maps.LatLng(origin.lat, origin.lng),
                 destination: new google.maps.LatLng(destination.lat, destination.lng),
                 waypoints: waypointsList,
-                travelMode: google.maps.TravelMode.WALKING,
-                optimizeWaypoints: false
+                optimizeWaypoints: false,  // Keep original order, don't reorder waypoints
+                travelMode: google.maps.TravelMode.WALKING  // DRIVING for proper road following
             };
             
             directionsService.route(request, (result, status) => {

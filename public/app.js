@@ -258,6 +258,15 @@ async function displayAllMarkers() {
             markerIndexMap.set(index, markers.length);
             markers.push(marker);
         }
+        // Create info window
+        const infoWindowContent = createInfoWindowContent(location, index);
+        
+        marker.addListener('click', () => {
+            infoWindow.setContent(infoWindowContent);
+            infoWindow.open(map, marker);
+        });
+        
+        markers.push(marker);
     });
     
     // Store waypoints for playback

@@ -4,21 +4,146 @@ const path = require('path');
 const url = require('url');
 
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'location_data.json');
+const DATA_FILE = path.join(__dirname, 'sample_location_data.json');
 
 // Initialize data file if it doesn't exist
 if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ locations: [] }, null, 2));
+    const initialData = {
+        status: 'success',
+        data: [],
+        total: 0,
+        showing: 0,
+        processing_time: '0ms',
+        stats: {
+            total_points: 0,
+            visit_points: 0,
+            start_time: null,
+            end_time: null
+        },
+        message: 'Route data loaded successfully'
+    };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
 }
 
-// Helper function to read location data
-function readLocationData() {
+// Helper function to read raw location data
+function readRawLocationData() {
     try {
         const data = fs.readFileSync(DATA_FILE, 'utf8');
         return JSON.parse(data);
     } catch (error) {
         return { locations: [] };
     }
+}
+
+function getStorageFormat(rawData) {
+    if (rawData && Array.isArray(rawData.data)) {
+        return 'array';
+    }
+    if (rawData && Array.isArray(rawData.locations)) {
+        return 'locations';
+    }
+    return 'locations';
+}
+
+function parseTimestamp(value) {
+    if (!value) {
+        return new Date().toISOString();
+    }
+    if (value instanceof Date) {
+        return value.toISOString();
+    }
+    if (typeof value === 'number') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+    }
+    if (typeof value === 'string') {
+        const cleaned = value.replace(',', '');
+        const date = new Date(cleaned);
+        return Number.isNaN(date.getTime()) ? value : date.toISOString();
+    }
+    return new Date().toISOString();
+}
+
+function normalizeLocationData(rawData) {
+    const format = getStorageFormat(rawData);
+    if (format === 'array') {
+        const locations = rawData.data.map((row, index) => {
+            const lat = Number(row[0]);
+            const lng = Number(row[1]);
+            const address = row[2] || '';
+            const routeId = row[6] || 'default_route';
+            const timestamp = parseTimestamp(row[7]);
+            const flagRaw = row[9] || 'normal';
+            const allowedFlags = ['check_in', 'check_out', 'visit', 'normal'];
+            const flag = allowedFlags.includes(flagRaw) ? flagRaw : 'normal';
+
+            return {
+                id: index + 1,
+                lat,
+                lng,
+                timestamp,
+                routeId,
+                flag,
+                address
+            };
+        });
+
+        return { locations, format, rawData };
+    }
+
+    return {
+        locations: Array.isArray(rawData.locations) ? rawData.locations : [],
+        format,
+        rawData
+    };
+}
+
+function appendLocationToRaw(rawData, locationPoint) {
+    const format = getStorageFormat(rawData);
+    if (format === 'array') {
+        const timestamp = typeof locationPoint.timestamp === 'string'
+            ? locationPoint.timestamp
+            : parseTimestamp(locationPoint.timestamp);
+
+        const row = [
+            locationPoint.lat,
+            locationPoint.lng,
+            locationPoint.address || '',
+            '-',
+            '-',
+            null,
+            locationPoint.routeId || 'default_route',
+            timestamp,
+            '.',
+            locationPoint.flag || 'normal'
+        ];
+
+        rawData.data = Array.isArray(rawData.data) ? rawData.data : [];
+        rawData.data.push(row);
+
+        if (typeof rawData.total === 'number') {
+            rawData.total = rawData.data.length;
+        }
+        if (typeof rawData.showing === 'number') {
+            rawData.showing = rawData.data.length;
+        }
+        if (rawData.stats && typeof rawData.stats === 'object') {
+            rawData.stats.total_points = rawData.data.length;
+            rawData.stats.start_time = rawData.stats.start_time || timestamp;
+            rawData.stats.end_time = timestamp;
+        }
+        return rawData;
+    }
+
+    rawData.locations = Array.isArray(rawData.locations) ? rawData.locations : [];
+    rawData.locations.push(locationPoint);
+    return rawData;
+}
+
+// Helper function to read normalized location data
+function readLocationData() {
+    const rawData = readRawLocationData();
+    return normalizeLocationData(rawData);
 }
 
 // Helper function to write location data
@@ -31,6 +156,29 @@ function setCorsHeaders(res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
+// Calculate distance between two coordinates (Haversine formula)
+function calculateDistance(coord1, coord2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
+    const dLng = (coord2.lng - coord1.lng) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(coord1.lat * Math.PI / 180) * Math.cos(coord2.lat * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+// Calculate duration between two timestamps
+function calculateDuration(startTime, endTime) {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const diffMs = end - start;
+    const diffMins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    return `${hours}h ${mins}m`;
 }
 
 // Create HTTP server
@@ -57,18 +205,20 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const locationPoint = JSON.parse(body);
-                const data = readLocationData();
+                const rawData = readRawLocationData();
                 
                 // Add timestamp if not provided
                 if (!locationPoint.timestamp) {
                     locationPoint.timestamp = new Date().toISOString();
+                } else {
+                    locationPoint.timestamp = parseTimestamp(locationPoint.timestamp);
                 }
                 
                 // Add unique ID
                 locationPoint.id = Date.now() + Math.random();
                 
-                data.locations.push(locationPoint);
-                writeLocationData(data);
+                const updatedRawData = appendLocationToRaw(rawData, locationPoint);
+                writeLocationData(updatedRawData);
                 
                 res.writeHead(201, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true, message: 'Location saved', data: locationPoint }));
@@ -78,7 +228,7 @@ const server = http.createServer((req, res) => {
             }
         });
     }
-    // API: Get all location data with filters
+    // API: Get all location data with filters and route information
     else if (pathname === '/api/locations' && req.method === 'GET') {
         const data = readLocationData();
         const query = parsedUrl.query;
@@ -101,8 +251,40 @@ const server = http.createServer((req, res) => {
         // Sort by timestamp
         locations.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         
+        // Group by route and calculate route data
+        const routeGroups = {};
+        locations.forEach(loc => {
+            const routeId = loc.routeId || 'default_route';
+            if (!routeGroups[routeId]) {
+                routeGroups[routeId] = [];
+            }
+            routeGroups[routeId].push(loc);
+        });
+        
+        // Calculate route information for each group
+        const routeInfo = {};
+        Object.keys(routeGroups).forEach(routeId => {
+            const routeLocations = routeGroups[routeId];
+            const path = routeLocations.map(loc => ({ lat: loc.lat, lng: loc.lng }));
+            
+            // Calculate total distance (approximate using haversine)
+            let totalDistance = 0;
+            for (let i = 0; i < path.length - 1; i++) {
+                totalDistance += calculateDistance(path[i], path[i + 1]);
+            }
+            
+            routeInfo[routeId] = {
+                waypoints: path,
+                totalPoints: routeLocations.length,
+                totalDistance: totalDistance.toFixed(2), // in km
+                startTime: routeLocations[0].timestamp,
+                endTime: routeLocations[routeLocations.length - 1].timestamp,
+                duration: calculateDuration(routeLocations[0].timestamp, routeLocations[routeLocations.length - 1].timestamp)
+            };
+        });
+        
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, data: locations }));
+        res.end(JSON.stringify({ success: true, data: locations, routes: routeInfo }));
     }
     // API: Get unique routes
     else if (pathname === '/api/routes' && req.method === 'GET') {
@@ -114,32 +296,48 @@ const server = http.createServer((req, res) => {
     }
     // API: Clear all data (for testing)
     else if (pathname === '/api/clear' && req.method === 'POST') {
-        writeLocationData({ locations: [] });
+        const rawData = readRawLocationData();
+        const format = getStorageFormat(rawData);
+
+        if (format === 'array') {
+            rawData.data = [];
+            rawData.total = 0;
+            rawData.showing = 0;
+            if (rawData.stats && typeof rawData.stats === 'object') {
+                rawData.stats.total_points = 0;
+                rawData.stats.start_time = null;
+                rawData.stats.end_time = null;
+            }
+            rawData.message = 'Route data cleared successfully';
+            rawData.status = rawData.status || 'success';
+            writeLocationData(rawData);
+        } else {
+            writeLocationData({ locations: [] });
+        }
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, message: 'All data cleared' }));
     }
     // API: Add sample data (for testing)
     else if (pathname === '/api/sample-data' && req.method === 'POST') {
-        const sampleData = {
-            locations: [
-                { id: 1, lat: 28.6139, lng: 77.2090, timestamp: '2024-02-03T08:00:00Z', routeId: 'route1', flag: 'check_in', address: 'Start Point - Delhi' },
-                { id: 2, lat: 28.6149, lng: 77.2100, timestamp: '2024-02-03T08:05:00Z', routeId: 'route1', flag: 'normal', address: 'Moving through Delhi' },
-                { id: 3, lat: 28.6159, lng: 77.2110, timestamp: '2024-02-03T08:10:00Z', routeId: 'route1', flag: 'visit', address: 'Client Visit 1' },
-                { id: 4, lat: 28.6169, lng: 77.2120, timestamp: '2024-02-03T08:15:00Z', routeId: 'route1', flag: 'normal', address: 'Moving' },
-                { id: 5, lat: 28.6179, lng: 77.2130, timestamp: '2024-02-03T08:20:00Z', routeId: 'route1', flag: 'visit', address: 'Client Visit 2' },
-                { id: 6, lat: 28.6189, lng: 77.2140, timestamp: '2024-02-03T08:25:00Z', routeId: 'route1', flag: 'normal', address: 'Moving' },
-                { id: 7, lat: 28.6199, lng: 77.2150, timestamp: '2024-02-03T08:30:00Z', routeId: 'route1', flag: 'check_out', address: 'End Point' },
-                
-                { id: 8, lat: 28.6200, lng: 77.2160, timestamp: '2024-02-03T10:00:00Z', routeId: 'route2', flag: 'check_in', address: 'Start Point - Route 2' },
-                { id: 9, lat: 28.6210, lng: 77.2170, timestamp: '2024-02-03T10:05:00Z', routeId: 'route2', flag: 'normal', address: 'Moving' },
-                { id: 10, lat: 28.6220, lng: 77.2180, timestamp: '2024-02-03T10:10:00Z', routeId: 'route2', flag: 'visit', address: 'Client Visit 3' },
-                { id: 11, lat: 28.6230, lng: 77.2190, timestamp: '2024-02-03T10:15:00Z', routeId: 'route2', flag: 'normal', address: 'Moving' },
-                { id: 12, lat: 28.6240, lng: 77.2200, timestamp: '2024-02-03T10:20:00Z', routeId: 'route2', flag: 'check_out', address: 'End Point - Route 2' }
-            ]
-        };
-        writeLocationData(sampleData);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, message: 'Sample data added', count: sampleData.locations.length }));
+        try {
+            const SAMPLE_TEMPLATE_FILE = path.join(__dirname, 'sample_data_template.json');
+            
+            // Read sample data from template file
+            const templateData = JSON.parse(fs.readFileSync(SAMPLE_TEMPLATE_FILE, 'utf8'));
+            
+            // Write the template data to sample_location_data.json
+            writeLocationData(templateData);
+            
+            const count = templateData.data ? templateData.data.length : (templateData.locations ? templateData.locations.length : 0);
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, message: 'Sample data added', count: count }));
+        } catch (error) {
+            console.error('Error loading sample data:', error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Error loading sample data template' }));
+        }
     }
     // Serve static files from public directory
     else if (req.method === 'GET') {

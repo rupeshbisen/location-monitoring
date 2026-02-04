@@ -3,11 +3,17 @@ let map;
 let markers = [];
 let polyline;
 let locationData = [];
+let waypoints = [];
+let routePath = []; // Actual road path from Directions API
 let currentPlaybackIndex = 0;
 let playbackInterval;
 let isPlaying = false;
 let playbackSpeed = 1;
 let markerIndexMap = new Map(); // Maps location index to marker index
+let directionsService;
+let traveledPolyline = null;
+let vehicleMarker = null;
+let infoWindow = null;
 const API_BASE_URL = 'http://localhost:3000/api';
 
 // Adaptive marker downsampling thresholds
@@ -17,7 +23,7 @@ const MEDIUM_DATASET_STEP = 10;
 const LARGE_DATASET_STEP = 200;
 
 // Initialize Google Map
-function initMap() {
+async function initMap() {
     // Default center (Delhi, India)
     const defaultCenter = { lat: 28.6139, lng: 77.2090 };
     
@@ -25,6 +31,12 @@ function initMap() {
         zoom: 13,
         center: defaultCenter,
         mapTypeId: 'roadmap',
+        mapId: 'DEMO_MAP_ID', // For advanced markers
+        gestureHandling: 'greedy',
+        zoomControl: true,
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: true,
         styles: [
             {
                 featureType: 'poi',
@@ -33,13 +45,19 @@ function initMap() {
         ]
     });
 
+    // Initialize Directions Service for road routes
+    directionsService = new google.maps.DirectionsService();
+    
+    // Initialize InfoWindow
+    infoWindow = new google.maps.InfoWindow();
+
     // Initialize UI event listeners
     initEventListeners();
     
     // Load available routes
     loadRoutes();
     
-    console.log('Map initialized successfully');
+    console.log('Map initialized successfully with Directions API');
 }
 
 // Initialize all event listeners
@@ -121,6 +139,8 @@ async function loadLocationData() {
     }
     
     try {
+        console.log('Loading location data from:', url);
+        
         const response = await fetch(url);
         const result = await response.json();
         
@@ -135,14 +155,22 @@ async function loadLocationData() {
                 return;
             }
             
-            // Clear existing markers and polyline
+            console.log(`Loaded ${locationData.length} location points`);
+            
+            // Clear existing markers and routes
             clearMap();
             
-            // Display all markers on the map
-            displayAllMarkers();
+            // Display all markers with road-following routes
+            await displayAllMarkers();
             
             // Update statistics
             updateStatistics();
+            
+            // Set total time
+            if (locationData.length > 0) {
+                const totalTime = new Date(locationData[locationData.length - 1].timestamp);
+                document.getElementById('totalTime').textContent = formatTime(totalTime);
+            }
             
             // Enable playback controls
             enablePlaybackControls();
@@ -150,17 +178,24 @@ async function loadLocationData() {
             // Reset playback
             resetPlayback();
             
-            alert(`Loaded ${locationData.length} location points!`);
+            alert(`✅ Loaded ${locationData.length} location points with road-following routes!`);
+        } else {
+            alert(`❌ Error: ${result.message || 'Failed to load location data'}`);
         }
     } catch (error) {
         console.error('Error loading location data:', error);
-        alert('Error loading location data. Make sure the server is running on port 3000.');
+        alert('❌ Error loading location data. Make sure the server is running on port 3000.');
     }
 }
 
-// Clear all markers and polyline from map
+// Clear all markers and polylines from map
 function clearMap() {
-    markers.forEach(marker => marker.setMap(null));
+    // Clear all markers
+    markers.forEach(marker => {
+        if (marker && marker.setMap) {
+            marker.setMap(null);
+        }
+    });
     markers = [];
     
     if (polyline) {
@@ -169,8 +204,8 @@ function clearMap() {
     }
 }
 
-// Display all markers on the map
-function displayAllMarkers() {
+// Display all markers on the map with road routes
+async function displayAllMarkers() {
     if (locationData.length === 0) return;
     
     const bounds = new google.maps.LatLngBounds();
@@ -211,12 +246,11 @@ function displayAllMarkers() {
                 animation: null
             });
             
-            // Create info window
-            const infoWindow = new google.maps.InfoWindow({
-                content: createInfoWindowContent(location, index)
-            });
+            // Create info window content
+            const infoWindowContent = createInfoWindowContent(location, index);
             
             marker.addListener('click', () => {
+                infoWindow.setContent(infoWindowContent);
                 infoWindow.open(map, marker);
             });
             
@@ -225,6 +259,15 @@ function displayAllMarkers() {
             markers.push(marker);
         }
     });
+    
+    // Store waypoints for playback
+    waypoints = locationData.map(loc => ({
+        lat: loc.lat,
+        lng: loc.lng,
+        timestamp: loc.timestamp,
+        address: loc.address,
+        flag: loc.flag
+    }));
     
     // Draw polyline connecting all points (using full path, not downsampled)
     polyline = new google.maps.Polyline({
@@ -325,9 +368,12 @@ function enablePlaybackControls() {
     document.getElementById('timelineSlider').disabled = false;
 }
 
-// Start playback
+// Start playback - follows actual road path
 function startPlayback() {
-    if (locationData.length === 0) return;
+    if (waypoints.length === 0 && routePath.length === 0) {
+        alert('Please load location data first');
+        return;
+    }
     
     isPlaying = true;
     document.getElementById('playBtn').disabled = true;
@@ -338,18 +384,32 @@ function startPlayback() {
         clearInterval(playbackInterval);
     }
     
-    // Calculate interval based on speed (base is 1 second per point)
-    const intervalTime = 1000 / playbackSpeed;
+    // Use routePath if available (road-based), otherwise use waypoints
+    const pathToFollow = routePath.length > 0 ? routePath : waypoints;
+    
+    // Calculate interval based on speed
+    const intervalTime = 100 / playbackSpeed; // Base 100ms per point
     
     playbackInterval = setInterval(() => {
-        if (currentPlaybackIndex >= locationData.length) {
+        if (currentPlaybackIndex >= pathToFollow.length - 1) {
             pausePlayback();
+            currentPlaybackIndex = 0;
+            if (traveledPolyline) {
+                traveledPolyline.setMap(null);
+                traveledPolyline = null;
+            }
+            if (vehicleMarker) {
+                vehicleMarker.setPosition(pathToFollow[0]);
+            }
+            updatePlaybackDisplay();
             return;
         }
         
         updatePlaybackDisplay();
         currentPlaybackIndex++;
     }, intervalTime);
+    
+    console.log(`Playback started at ${playbackSpeed}x speed, following ${pathToFollow.length} path points`);
 }
 
 // Pause playback
@@ -376,50 +436,94 @@ function resetPlayback() {
     });
 }
 
-// Update playback display
+// Update playback display - vehicle follows road path
 function updatePlaybackDisplay() {
-    if (locationData.length === 0) return;
+    const pathToFollow = routePath.length > 0 ? routePath : waypoints;
     
-    // Reset all markers
-    markers.forEach(marker => {
-        marker.setAnimation(null);
-        marker.setOpacity(0.5);
-    });
+    if (pathToFollow.length === 0 || currentPlaybackIndex >= pathToFollow.length) return;
     
-    // Highlight markers up to current location index
-    for (let locIndex = 0; locIndex <= currentPlaybackIndex && locIndex < locationData.length; locIndex++) {
-        const markerIndex = markerIndexMap.get(locIndex);
-        if (markerIndex !== undefined) {
-            markers[markerIndex].setOpacity(1);
+    const currentPosition = pathToFollow[currentPlaybackIndex];
+    
+    // Move vehicle marker to current position on road
+    if (vehicleMarker) {
+        vehicleMarker.setPosition(currentPosition);
+        
+        // Calculate rotation angle if we have next point
+        if (currentPlaybackIndex < pathToFollow.length - 1) {
+            const nextPosition = pathToFollow[currentPlaybackIndex + 1];
+            const heading = google.maps.geometry.spherical.computeHeading(
+                new google.maps.LatLng(currentPosition.lat, currentPosition.lng),
+                new google.maps.LatLng(nextPosition.lat, nextPosition.lng)
+            );
             
-            // Animate current marker
-            if (locIndex === currentPlaybackIndex) {
-                markers[markerIndex].setAnimation(google.maps.Animation.BOUNCE);
-                
-                // Center map on current marker
-                map.panTo(markers[markerIndex].getPosition());
+            // Update vehicle icon with rotation
+            const icon = vehicleMarker.getIcon();
+            if (icon && typeof icon === 'object') {
+                icon.rotation = heading;
+                vehicleMarker.setIcon(icon);
             }
         }
     }
     
-    // If current location doesn't have a marker, center on the location itself
-    if (locationData[currentPlaybackIndex] && !markerIndexMap.has(currentPlaybackIndex)) {
-        const currentLocation = locationData[currentPlaybackIndex];
-        map.panTo({ lat: currentLocation.lat, lng: currentLocation.lng });
-    }
+    // Center map on vehicle
+    map.panTo(currentPosition);
     
-    // Update timeline
-    const progress = (currentPlaybackIndex / locationData.length) * 100;
-    document.getElementById('timelineSlider').value = progress;
+    // Update traveled path (yellow trail)
+    updateTraveledPath();
     
-    // Update time display
-    if (locationData[currentPlaybackIndex]) {
-        const currentTime = new Date(locationData[currentPlaybackIndex].timestamp);
-        const startTime = new Date(locationData[0].timestamp);
-        
-        document.getElementById('currentTime').textContent = formatTime(currentTime);
-        document.getElementById('totalTime').textContent = formatTime(new Date(locationData[locationData.length - 1].timestamp));
+    // Update timeline slider
+    const progress = (currentPlaybackIndex / (pathToFollow.length - 1)) * 100;
+    document.getElementById('timelineSlider').value = Math.min(100, Math.max(0, progress));
+    
+    // Find closest waypoint for time display
+    if (routePath.length > 0 && waypoints.length > 0) {
+        const closestWaypoint = findClosestWaypoint(currentPosition);
+        if (closestWaypoint && closestWaypoint.timestamp) {
+            const time = new Date(closestWaypoint.timestamp);
+            document.getElementById('currentTime').textContent = formatTime(time);
+        }
+    } else if (waypoints[currentPlaybackIndex] && waypoints[currentPlaybackIndex].timestamp) {
+        const time = new Date(waypoints[currentPlaybackIndex].timestamp);
+        document.getElementById('currentTime').textContent = formatTime(time);
     }
+}
+
+// Update traveled path (yellow trail behind vehicle)
+function updateTraveledPath() {
+    if (currentPlaybackIndex < 1) return;
+    
+    const pathToFollow = routePath.length > 0 ? routePath : waypoints;
+    const traveledPath = pathToFollow.slice(0, currentPlaybackIndex + 1);
+    
+    if (traveledPolyline) {
+        traveledPolyline.setPath(traveledPath);
+    } else {
+        traveledPolyline = new google.maps.Polyline({
+            path: traveledPath,
+            geodesic: true,
+            strokeColor: '#FBBC04',
+            strokeOpacity: 0.9,
+            strokeWeight: 6,
+            map: map,
+            zIndex: 500
+        });
+    }
+}
+
+// Find closest waypoint to current position
+function findClosestWaypoint(position) {
+    let closestWaypoint = null;
+    let minDistance = Infinity;
+    
+    waypoints.forEach(wp => {
+        const distance = Math.abs(wp.lat - position.lat) + Math.abs(wp.lng - position.lng);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestWaypoint = wp;
+        }
+    });
+    
+    return closestWaypoint;
 }
 
 // Format time for display

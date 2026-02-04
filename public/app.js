@@ -7,6 +7,7 @@ let currentPlaybackIndex = 0;
 let playbackInterval;
 let isPlaying = false;
 let playbackSpeed = 1;
+let markerIndexMap = new Map(); // Maps location index to marker index
 const API_BASE_URL = 'http://localhost:3000/api';
 
 // Initialize Google Map
@@ -118,7 +119,10 @@ async function loadLocationData() {
         const result = await response.json();
         
         if (result.success) {
-            locationData = result.data;
+            // Sort locations by timestamp to ensure correct order
+            locationData = result.data.sort((a, b) => 
+                new Date(a.timestamp) - new Date(b.timestamp)
+            );
             
             if (locationData.length === 0) {
                 alert('No location data found. Try loading sample data first.');
@@ -166,33 +170,55 @@ function displayAllMarkers() {
     const bounds = new google.maps.LatLngBounds();
     const path = [];
     
+    // Clear the marker index map
+    markerIndexMap.clear();
+    
+    // Adaptive Marker Downsampling
+    // 1-100 pts: Show all
+    // 100-1000 pts: Show every 10th
+    // 1000+ pts: Show every 200th (handles 10k+ gracefully)
+    const total = locationData.length;
+    const markerStep = total < 100 ? 1 : total < 1000 ? 10 : 200;
+    
     locationData.forEach((location, index) => {
         const position = { lat: location.lat, lng: location.lng };
+        
+        // Always add to path for polyline
         path.push(position);
         bounds.extend(position);
         
-        // Create marker with custom icon based on flag
-        const marker = new google.maps.Marker({
-            position: position,
-            map: map,
-            title: location.address || `Point ${index + 1}`,
-            icon: getMarkerIcon(location.flag),
-            animation: null
-        });
+        // Only create markers based on downsampling step or for important flags
+        const isImportantFlag = location.flag === 'check_in' || 
+                               location.flag === 'check_out' || 
+                               location.flag === 'visit';
+        const shouldShowMarker = (index % markerStep === 0) || isImportantFlag;
         
-        // Create info window
-        const infoWindow = new google.maps.InfoWindow({
-            content: createInfoWindowContent(location, index)
-        });
-        
-        marker.addListener('click', () => {
-            infoWindow.open(map, marker);
-        });
-        
-        markers.push(marker);
+        if (shouldShowMarker) {
+            // Create marker with custom icon based on flag
+            const marker = new google.maps.Marker({
+                position: position,
+                map: map,
+                title: location.address || `Point ${index + 1}`,
+                icon: getMarkerIcon(location.flag),
+                animation: null
+            });
+            
+            // Create info window
+            const infoWindow = new google.maps.InfoWindow({
+                content: createInfoWindowContent(location, index)
+            });
+            
+            marker.addListener('click', () => {
+                infoWindow.open(map, marker);
+            });
+            
+            // Map location index to marker index
+            markerIndexMap.set(index, markers.length);
+            markers.push(marker);
+        }
     });
     
-    // Draw polyline connecting all points
+    // Draw polyline connecting all points (using full path, not downsampled)
     polyline = new google.maps.Polyline({
         path: path,
         geodesic: true,
@@ -204,6 +230,8 @@ function displayAllMarkers() {
     
     // Fit map to show all markers
     map.fitBounds(bounds);
+    
+    console.log(`Displayed ${markers.length} markers out of ${total} points (step: ${markerStep})`);
 }
 
 // Get marker icon based on flag
@@ -350,17 +378,26 @@ function updatePlaybackDisplay() {
         marker.setOpacity(0.5);
     });
     
-    // Highlight markers up to current index
-    for (let i = 0; i <= currentPlaybackIndex && i < markers.length; i++) {
-        markers[i].setOpacity(1);
-        
-        // Animate current marker
-        if (i === currentPlaybackIndex) {
-            markers[i].setAnimation(google.maps.Animation.BOUNCE);
+    // Highlight markers up to current location index
+    for (let locIndex = 0; locIndex <= currentPlaybackIndex && locIndex < locationData.length; locIndex++) {
+        const markerIndex = markerIndexMap.get(locIndex);
+        if (markerIndex !== undefined) {
+            markers[markerIndex].setOpacity(1);
             
-            // Center map on current marker
-            map.panTo(markers[i].getPosition());
+            // Animate current marker
+            if (locIndex === currentPlaybackIndex) {
+                markers[markerIndex].setAnimation(google.maps.Animation.BOUNCE);
+                
+                // Center map on current marker
+                map.panTo(markers[markerIndex].getPosition());
+            }
         }
+    }
+    
+    // If current location doesn't have a marker, center on the location itself
+    if (!markerIndexMap.has(currentPlaybackIndex) && locationData[currentPlaybackIndex]) {
+        const currentLocation = locationData[currentPlaybackIndex];
+        map.panTo({ lat: currentLocation.lat, lng: currentLocation.lng });
     }
     
     // Update timeline

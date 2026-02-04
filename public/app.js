@@ -9,11 +9,18 @@ let currentPlaybackIndex = 0;
 let playbackInterval;
 let isPlaying = false;
 let playbackSpeed = 1;
+let markerIndexMap = new Map(); // Maps location index to marker index
 let directionsService;
 let traveledPolyline = null;
 let vehicleMarker = null;
 let infoWindow = null;
 const API_BASE_URL = 'http://localhost:3000/api';
+
+// Adaptive marker downsampling thresholds
+const SMALL_DATASET_THRESHOLD = 100;
+const MEDIUM_DATASET_THRESHOLD = 1000;
+const MEDIUM_DATASET_STEP = 10;
+const LARGE_DATASET_STEP = 200;
 
 // Initialize Google Map
 async function initMap() {
@@ -138,7 +145,10 @@ async function loadLocationData() {
         const result = await response.json();
         
         if (result.success) {
-            locationData = result.data;
+            // Sort locations by timestamp to ensure correct order
+            locationData = result.data.sort((a, b) => 
+                new Date(a.timestamp) - new Date(b.timestamp)
+            );
             
             if (locationData.length === 0) {
                 alert('No location data found. Try loading sample data first.');
@@ -201,20 +211,53 @@ async function displayAllMarkers() {
     const bounds = new google.maps.LatLngBounds();
     const path = [];
     
+    // Clear the marker index map
+    markerIndexMap.clear();
+    
+    // Adaptive Marker Downsampling
+    // 1-100 pts: Show all
+    // 100-1000 pts: Show every 10th
+    // 1000+ pts: Show every 200th (handles 10k+ gracefully)
+    const total = locationData.length;
+    const markerStep = total < SMALL_DATASET_THRESHOLD ? 1 : 
+                       total < MEDIUM_DATASET_THRESHOLD ? MEDIUM_DATASET_STEP : 
+                       LARGE_DATASET_STEP;
+    
     locationData.forEach((location, index) => {
         const position = { lat: location.lat, lng: location.lng };
+        
+        // Always add to path for polyline
         path.push(position);
         bounds.extend(position);
         
-        // Create marker with custom icon based on flag
-        const marker = new google.maps.Marker({
-            position: position,
-            map: map,
-            title: location.address || `Point ${index + 1}`,
-            icon: getMarkerIcon(location.flag),
-            animation: null
-        });
+        // Only create markers based on downsampling step or for important flags
+        const isImportantFlag = location.flag === 'check_in' || 
+                               location.flag === 'check_out' || 
+                               location.flag === 'visit';
+        const shouldShowMarker = (index % markerStep === 0) || isImportantFlag;
         
+        if (shouldShowMarker) {
+            // Create marker with custom icon based on flag
+            const marker = new google.maps.Marker({
+                position: position,
+                map: map,
+                title: location.address || `Point ${index + 1}`,
+                icon: getMarkerIcon(location.flag),
+                animation: null
+            });
+            
+            // Create info window content
+            const infoWindowContent = createInfoWindowContent(location, index);
+            
+            marker.addListener('click', () => {
+                infoWindow.setContent(infoWindowContent);
+                infoWindow.open(map, marker);
+            });
+            
+            // Map location index to marker index
+            markerIndexMap.set(index, markers.length);
+            markers.push(marker);
+        }
         // Create info window
         const infoWindowContent = createInfoWindowContent(location, index);
         
@@ -235,7 +278,7 @@ async function displayAllMarkers() {
         flag: loc.flag
     }));
     
-    // Draw polyline connecting all points
+    // Draw polyline connecting all points (using full path, not downsampled)
     polyline = new google.maps.Polyline({
         path: path,
         geodesic: true,
@@ -247,6 +290,8 @@ async function displayAllMarkers() {
     
     // Fit map to show all markers
     map.fitBounds(bounds);
+    
+    console.log(`Displayed ${markers.length} markers out of ${total} points (step: ${markerStep})`);
 }
 
 // Get marker icon based on flag

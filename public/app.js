@@ -9,6 +9,9 @@ let isPlaying = false;
 let playbackSpeed = 1;
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// Color palette for different routes
+const ROUTE_COLORS = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
+
 // Initialize Google Map
 function initMap() {
     // Default center (Delhi, India)
@@ -199,13 +202,8 @@ function displayAllMarkers() {
     });
     
     // Draw separate polyline for each route
-    const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
-    let routeIndex = 0;
-    
-    Object.keys(routePaths).forEach(routeId => {
-        const path = routePaths[routeId];
-        const color = colors[routeIndex % colors.length];
-        routeIndex++;
+    Object.entries(routePaths).forEach(([routeId, path], routeIndex) => {
+        const color = ROUTE_COLORS[routeIndex % ROUTE_COLORS.length];
         
         const polyline = new google.maps.Polyline({
             path: path,

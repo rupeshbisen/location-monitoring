@@ -10,6 +10,12 @@ let playbackSpeed = 1;
 let markerIndexMap = new Map(); // Maps location index to marker index
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// Adaptive marker downsampling thresholds
+const SMALL_DATASET_THRESHOLD = 100;
+const MEDIUM_DATASET_THRESHOLD = 1000;
+const MEDIUM_DATASET_STEP = 10;
+const LARGE_DATASET_STEP = 200;
+
 // Initialize Google Map
 function initMap() {
     // Default center (Delhi, India)
@@ -178,7 +184,9 @@ function displayAllMarkers() {
     // 100-1000 pts: Show every 10th
     // 1000+ pts: Show every 200th (handles 10k+ gracefully)
     const total = locationData.length;
-    const markerStep = total < 100 ? 1 : total < 1000 ? 10 : 200;
+    const markerStep = total < SMALL_DATASET_THRESHOLD ? 1 : 
+                       total < MEDIUM_DATASET_THRESHOLD ? MEDIUM_DATASET_STEP : 
+                       LARGE_DATASET_STEP;
     
     locationData.forEach((location, index) => {
         const position = { lat: location.lat, lng: location.lng };
@@ -395,7 +403,7 @@ function updatePlaybackDisplay() {
     }
     
     // If current location doesn't have a marker, center on the location itself
-    if (!markerIndexMap.has(currentPlaybackIndex) && locationData[currentPlaybackIndex]) {
+    if (locationData[currentPlaybackIndex] && !markerIndexMap.has(currentPlaybackIndex)) {
         const currentLocation = locationData[currentPlaybackIndex];
         map.panTo({ lat: currentLocation.lat, lng: currentLocation.lng });
     }

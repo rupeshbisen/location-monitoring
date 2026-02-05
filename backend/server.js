@@ -227,12 +227,6 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, data: locations, routes: routeInfo }));
     }
-    // API: Clear all data (for testing)
-    else if (pathname === '/api/clear' && req.method === 'POST') {
-        writeLocationData(createEmptyData('Route data cleared successfully'));
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, message: 'All data cleared' }));
-    }
     // Serve static files from public directory
     else if (req.method === 'GET') {
         let filePath = path.join(__dirname, '..', 'public', pathname === '/' ? 'index.html' : pathname);
@@ -276,5 +270,4 @@ server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
     console.log(`API endpoints:`);
     console.log(`  GET  /api/locations - Get all locations (with optional filters)`);
-    console.log(`  POST /api/clear - Clear all data`);
 });

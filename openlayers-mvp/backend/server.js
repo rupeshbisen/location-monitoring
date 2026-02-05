@@ -47,13 +47,13 @@ function parseTimestamp(value) {
         return value.toISOString();
     }
     if (typeof value === 'number') {
-        const parsedDate = new Date(value);
-        return Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
     }
     if (typeof value === 'string') {
         const cleaned = value.replace(',', '');
-        const parsedDate = new Date(cleaned);
-        return Number.isNaN(parsedDate.getTime()) ? value : parsedDate.toISOString();
+        const date = new Date(cleaned);
+        return Number.isNaN(date.getTime()) ? value : date.toISOString();
     }
     return new Date().toISOString();
 }
@@ -357,7 +357,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`🗺️  OpenLayers Location Monitoring Server`);
     console.log(`Server running at http://localhost:${PORT}/`);
     console.log(`API endpoints:`);
     console.log(`  POST /api/location - Submit location data`);

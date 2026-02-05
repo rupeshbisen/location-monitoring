@@ -3,6 +3,8 @@
 ## Overview
 Successfully created a complete MVP (Minimum Viable Product) for the Location Monitoring System using OpenLayers instead of Google Maps. The MVP maintains all functionality from the original codebase while using free, open-source mapping technology.
 
+**Key Architecture Decision**: The OpenLayers MVP **shares the same backend** with the Google Maps version. Only the frontend is different - there is NO backend duplication!
+
 ## Project Location
 ```
 /openlayers-mvp/
@@ -12,14 +14,14 @@ This is a **separate directory** as requested, with no changes to the original G
 
 ## What Was Created
 
-### 1. Complete Backend (Node.js)
-- **File**: `backend/server.js`
-- All REST API endpoints from original codebase
-- JSON file-based database
+### 1. Shared Backend (No Duplication)
+- **Location**: `../backend/server.js` (root directory)
+- Shared by both Google Maps and OpenLayers versions
+- All REST API endpoints remain identical
+- JSON file-based database is shared
 - CORS support for development
-- Sample data generation
 
-### 2. Frontend Implementation
+### 2. Frontend Implementation (OpenLayers)
 - **HTML**: `public/index.html` - Complete UI with OpenLayers integration
 - **JavaScript**: `public/app.js` - Full OpenLayers implementation with all features
 - **CSS**: `public/style.css` - Styled interface matching original design

@@ -2,6 +2,8 @@
 
 A complete location monitoring application MVP built with OpenLayers that tracks location points from mobile applications and displays them on an interactive web application with playback controls.
 
+**Important**: This MVP **shares the same backend API** with the Google Maps version. Only the frontend is different - no backend duplication!
+
 ## ✨ Features
 
 - 📱 **Mobile APK Integration**: REST API endpoints to receive location data from mobile applications
@@ -39,9 +41,11 @@ openlayers-mvp/
 
 ### Installation
 
-1. Navigate to the openlayers-mvp directory:
+The OpenLayers MVP **shares the same backend API** with the Google Maps version. The only difference is the frontend.
+
+1. Navigate to the root directory:
    ```bash
-   cd openlayers-mvp
+   cd /home/runner/work/location-monitoring/location-monitoring
    ```
 
 2. Install dependencies (optional - OpenLayers is loaded via CDN):
@@ -51,18 +55,33 @@ openlayers-mvp/
 
 ### Running the Application
 
-1. Start the backend server:
-   ```bash
-   npm start
-   ```
-   The server will start on `http://localhost:3000`
+**Option 1: Using Shared Backend (Recommended)**
 
-2. Open your browser and navigate to:
-   ```
-   http://localhost:3000
-   ```
+The backend serves files from the `public/` directory by default (Google Maps version). To use the OpenLayers MVP:
 
-3. Click "Load Sample Data" to load test data and see the application in action.
+```bash
+# From root directory
+npm start
+```
+
+Then manually copy the OpenLayers frontend files when you want to switch:
+```bash
+# Switch to OpenLayers (run from root)
+cp -r openlayers-mvp/public/* public/
+
+# Switch back to Google Maps (restore from git)
+git checkout public/
+```
+
+**Option 2: Independent Server for OpenLayers**
+
+From the openlayers-mvp directory:
+```bash
+cd openlayers-mvp
+npm start  # This runs ../backend/server.js
+```
+
+**Note**: Both versions use the **same backend API** (`backend/server.js`). The backend is NOT duplicated - only the frontend differs.
 
 ## 📡 API Endpoints
 

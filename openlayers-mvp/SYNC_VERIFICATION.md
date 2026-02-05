@@ -2,26 +2,32 @@
 
 ## Date: 2026-02-05
 
-## Request
-User asked to check if the current codebase has changed and update the OpenLayers MVP accordingly.
+## Update: Backend Architecture Change
 
-## Verification Performed
+### User Feedback
+User correctly identified that **duplicating the backend is unnecessary** since both versions use the same API.
 
-### 1. Backend Comparison
-**File**: `backend/server.js`
+### Action Taken
+✅ **Removed duplicate backend** from `openlayers-mvp/backend/`  
+✅ **Updated documentation** to reflect shared backend architecture  
+✅ **Updated package.json** to reference `../backend/server.js`  
+✅ **Clarified** that only the frontend differs between versions  
 
-**Status**: ✅ Now synced
+## Architecture
 
-**Changes Made**:
-- Reverted variable naming improvement (parsedDate → date) to match current codebase exactly
-- Removed custom console message to match original
-- Backend is now 100% identical to current codebase (367 lines)
+### Shared Backend ✅
+**Location**: `/backend/server.js` (root directory)
 
-**Result**: Files are now identical
-```bash
-diff backend/server.js openlayers-mvp/backend/server.js
-# No output - files match perfectly
-```
+**Used By**:
+- Google Maps version (default, serves from `public/`)
+- OpenLayers MVP version (serves from `openlayers-mvp/public/` when switched)
+
+**Benefits**:
+- ✅ No code duplication
+- ✅ Single source of truth for API logic
+- ✅ Shared database (`location_data.json`)
+- ✅ Easier maintenance and updates
+- ✅ Both versions 100% compatible with same API
 
 ### 2. Frontend Comparison
 **Files**: `public/app.js`, `public/index.html`, `public/style.css`

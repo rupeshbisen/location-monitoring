@@ -2,28 +2,37 @@
 
 ## Get Started in 3 Minutes
 
-### Step 1: Start the Server
+**Note**: The OpenLayers MVP **shares the backend** with the Google Maps version. No backend duplication!
+
+### Step 1: Start the Shared Backend
 ```bash
-cd openlayers-mvp
+cd /home/runner/work/location-monitoring/location-monitoring
 npm start
 ```
 
 You should see:
 ```
-🗺️  OpenLayers Location Monitoring Server
 Server running at http://localhost:3000/
 ```
 
 ### Step 2: Open the Application
-Open your browser and navigate to:
-```
-http://localhost:3000
+The backend serves from the `public/` directory by default (Google Maps version).
+
+**Option A - Switch to OpenLayers frontend**:
+```bash
+# Temporarily switch to OpenLayers (from root)
+cp -r openlayers-mvp/public/* public/
 ```
 
+**Option B - Keep both versions**:
+- Google Maps: `http://localhost:3000` (default)
+- OpenLayers: Copy files as shown above
+
 ### Step 3: Load Sample Data
-1. Click the **"Load Sample Data"** button
-2. Click **"Load Data"** to display the routes on the map
-3. Click **"Play"** to start the animated playback
+1. Open `http://localhost:3000`
+2. Click the **"Load Sample Data"** button
+3. Click **"Load Data"** to display the routes on the map
+4. Click **"Play"** to start the animated playback
 
 That's it! 🎉
 

@@ -2,10 +2,9 @@
   "name": "location-monitoring-openlayers",
   "version": "1.0.0",
   "description": "Location monitoring application with OpenLayers - MVP with route tracking and playback controls",
-  "main": "backend/server.js",
+  "main": "../backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "dev": "node backend/server.js"
+    "start": "node ../backend/server.js"
   },
   "keywords": [
     "location",

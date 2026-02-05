@@ -62,7 +62,6 @@ async function initMap() {
 // Initialize all event listeners
 function initEventListeners() {
     document.getElementById('loadDataBtn').addEventListener('click', loadLocationData);
-    document.getElementById('loadSampleBtn').addEventListener('click', loadSampleData);
     document.getElementById('playBtn').addEventListener('click', startPlayback);
     document.getElementById('pauseBtn').addEventListener('click', pausePlayback);
     document.getElementById('resetBtn').addEventListener('click', resetPlayback);
@@ -85,23 +84,6 @@ function initEventListeners() {
             updatePlaybackDisplay();
         }
     });
-}
-
-// Load sample data for testing
-async function loadSampleData() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/sample-data`, {
-            method: 'POST'
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            alert(`Sample data loaded successfully! (${result.count} points)`);
-        }
-    } catch (error) {
-        console.error('Error loading sample data:', error);
-        alert('Error loading sample data. Make sure the server is running.');
-    }
 }
 
 // Load location data from API

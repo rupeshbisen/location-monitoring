@@ -245,11 +245,6 @@ const server = http.createServer((req, res) => {
         
         let locations = data.locations;
         
-        // Filter by route ID if provided
-        if (query.routeId) {
-            locations = locations.filter(loc => loc.routeId === query.routeId);
-        }
-        
         // Filter by date range if provided
         if (query.startDate) {
             locations = locations.filter(loc => new Date(loc.timestamp) >= new Date(query.startDate));
@@ -295,14 +290,6 @@ const server = http.createServer((req, res) => {
         
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, data: locations, routes: routeInfo }));
-    }
-    // API: Get unique routes
-    else if (pathname === '/api/routes' && req.method === 'GET') {
-        const data = readLocationData();
-        const routes = [...new Set(data.locations.map(loc => loc.routeId).filter(Boolean))];
-        
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, data: routes }));
     }
     // API: Clear all data (for testing)
     else if (pathname === '/api/clear' && req.method === 'POST') {
@@ -361,7 +348,6 @@ server.listen(PORT, () => {
     console.log(`API endpoints:`);
     console.log(`  POST /api/location - Submit location data`);
     console.log(`  GET  /api/locations - Get all locations (with optional filters)`);
-    console.log(`  GET  /api/routes - Get unique route IDs`);
     console.log(`  POST /api/sample-data - Load sample data for testing`);
     console.log(`  POST /api/clear - Clear all data`);
 });

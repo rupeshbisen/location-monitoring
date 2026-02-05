@@ -56,9 +56,6 @@ async function initMap() {
     // Initialize UI event listeners
     initEventListeners();
     
-    // Load available routes
-    loadRoutes();
-    
     console.log('Map initialized successfully with Directions API');
 }
 
@@ -90,29 +87,6 @@ function initEventListeners() {
     });
 }
 
-// Load available routes from API
-async function loadRoutes() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/routes`);
-        const result = await response.json();
-        
-        if (result.success) {
-            const select = document.getElementById('routeSelect');
-            // Clear existing options except "All Routes"
-            select.innerHTML = '<option value="">All Routes</option>';
-            
-            result.data.forEach(routeId => {
-                const option = document.createElement('option');
-                option.value = routeId;
-                option.textContent = routeId;
-                select.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Error loading routes:', error);
-    }
-}
-
 // Load sample data for testing
 async function loadSampleData() {
     try {
@@ -123,7 +97,6 @@ async function loadSampleData() {
         
         if (result.success) {
             alert(`Sample data loaded successfully! (${result.count} points)`);
-            loadRoutes();
         }
     } catch (error) {
         console.error('Error loading sample data:', error);
@@ -133,12 +106,7 @@ async function loadSampleData() {
 
 // Load location data from API
 async function loadLocationData() {
-    const routeId = document.getElementById('routeSelect').value;
-    let url = `${API_BASE_URL}/locations`;
-    
-    if (routeId) {
-        url += `?routeId=${routeId}`;
-    }
+    const url = `${API_BASE_URL}/locations`;
     
     try {
         console.log('Loading location data from:', url);

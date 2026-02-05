@@ -386,7 +386,7 @@ async function fetchDirectionsPath(points, lineColor) {
                 destination: new google.maps.LatLng(destination.lat, destination.lng),
                 waypoints: waypointsList,
                 optimizeWaypoints: false,  // Keep original order, don't reorder waypoints
-                travelMode: google.maps.TravelMode.WALKING  // DRIVING for proper road following
+                travelMode: google.maps.TravelMode.WALKING
             };
             
             directionsService.route(request, (result, status) => {

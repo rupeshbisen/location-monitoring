@@ -1,0 +1,5 @@
+node_modules/
+backend/location_data.json
+npm-debug.log
+.DS_Store
+*.log

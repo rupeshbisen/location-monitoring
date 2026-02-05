@@ -129,38 +129,6 @@ function writeLocationData(data) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// Generate sample tracking data for demo/testing
-function generateSampleData() {
-    const baseTime = new Date('2026-01-12T09:20:00');
-    const baseLat = 21.0894;
-    const baseLng = 79.0910;
-    const routes = ['Sandeep', 'Rupesh'];
-    const data = [];
-    
-    routes.forEach(routeId => {
-        for (let i = 0; i < 20; i++) {
-            const time = new Date(baseTime.getTime() + i * 30000); // 30 sec intervals
-            const lat = baseLat + (Math.random() - 0.5) * 0.01;
-            const lng = baseLng + (Math.random() - 0.5) * 0.01;
-            
-            data.push([
-                lat, lng, '', '-', '-', null, routeId,
-                time.toISOString(), '.', 'normal'
-            ]);
-        }
-    });
-    
-    const result = createEmptyData('Sample data generated');
-    result.data = data;
-    result.total = data.length;
-    result.showing = data.length;
-    result.stats.total_points = data.length;
-    result.stats.start_time = data[0][7];
-    result.stats.end_time = data[data.length - 1][7];
-    
-    return result;
-}
-
 // CORS headers
 function setCorsHeaders(res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -206,49 +174,12 @@ const server = http.createServer((req, res) => {
 
     setCorsHeaders(res);
 
-    // API: Submit location data from mobile APK
-    if (pathname === '/api/location' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-        req.on('end', () => {
-            try {
-                const locationPoint = JSON.parse(body);
-                const rawData = readRawLocationData();
-                
-                // Add timestamp if not provided
-                if (!locationPoint.timestamp) {
-                    locationPoint.timestamp = new Date().toISOString();
-                } else {
-                    locationPoint.timestamp = parseTimestamp(locationPoint.timestamp);
-                }
-                
-                // Add unique ID
-                locationPoint.id = Date.now() + Math.random();
-                
-                const updatedRawData = appendLocationToRaw(rawData, locationPoint);
-                writeLocationData(updatedRawData);
-                
-                res.writeHead(201, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: true, message: 'Location saved', data: locationPoint }));
-            } catch (error) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, message: 'Invalid data format' }));
-            }
-        });
-    }
     // API: Get all location data with filters and route information
-    else if (pathname === '/api/locations' && req.method === 'GET') {
+    if (pathname === '/api/locations' && req.method === 'GET') {
         const data = readLocationData();
         const query = parsedUrl.query;
         
         let locations = data.locations;
-        
-        // Filter by route ID if provided
-        if (query.routeId) {
-            locations = locations.filter(loc => loc.routeId === query.routeId);
-        }
         
         // Filter by date range if provided
         if (query.startDate) {
@@ -296,27 +227,6 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, data: locations, routes: routeInfo }));
     }
-    // API: Get unique routes
-    else if (pathname === '/api/routes' && req.method === 'GET') {
-        const data = readLocationData();
-        const routes = [...new Set(data.locations.map(loc => loc.routeId).filter(Boolean))];
-        
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, data: routes }));
-    }
-    // API: Clear all data (for testing)
-    else if (pathname === '/api/clear' && req.method === 'POST') {
-        writeLocationData(createEmptyData('Route data cleared successfully'));
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, message: 'All data cleared' }));
-    }
-    // API: Add sample data (for testing)
-    else if (pathname === '/api/sample-data' && req.method === 'POST') {
-        const sampleData = generateSampleData();
-        writeLocationData(sampleData);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, message: 'Sample data added', count: sampleData.data.length }));
-    }
     // Serve static files from public directory
     else if (req.method === 'GET') {
         let filePath = path.join(__dirname, '..', 'public', pathname === '/' ? 'index.html' : pathname);
@@ -359,9 +269,5 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
     console.log(`API endpoints:`);
-    console.log(`  POST /api/location - Submit location data`);
     console.log(`  GET  /api/locations - Get all locations (with optional filters)`);
-    console.log(`  GET  /api/routes - Get unique route IDs`);
-    console.log(`  POST /api/sample-data - Load sample data for testing`);
-    console.log(`  POST /api/clear - Clear all data`);
 });

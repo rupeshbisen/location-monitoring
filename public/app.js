@@ -56,16 +56,12 @@ async function initMap() {
     // Initialize UI event listeners
     initEventListeners();
     
-    // Load available routes
-    loadRoutes();
-    
     console.log('Map initialized successfully with Directions API');
 }
 
 // Initialize all event listeners
 function initEventListeners() {
     document.getElementById('loadDataBtn').addEventListener('click', loadLocationData);
-    document.getElementById('loadSampleBtn').addEventListener('click', loadSampleData);
     document.getElementById('playBtn').addEventListener('click', startPlayback);
     document.getElementById('pauseBtn').addEventListener('click', pausePlayback);
     document.getElementById('resetBtn').addEventListener('click', resetPlayback);
@@ -90,55 +86,9 @@ function initEventListeners() {
     });
 }
 
-// Load available routes from API
-async function loadRoutes() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/routes`);
-        const result = await response.json();
-        
-        if (result.success) {
-            const select = document.getElementById('routeSelect');
-            // Clear existing options except "All Routes"
-            select.innerHTML = '<option value="">All Routes</option>';
-            
-            result.data.forEach(routeId => {
-                const option = document.createElement('option');
-                option.value = routeId;
-                option.textContent = routeId;
-                select.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Error loading routes:', error);
-    }
-}
-
-// Load sample data for testing
-async function loadSampleData() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/sample-data`, {
-            method: 'POST'
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            alert(`Sample data loaded successfully! (${result.count} points)`);
-            loadRoutes();
-        }
-    } catch (error) {
-        console.error('Error loading sample data:', error);
-        alert('Error loading sample data. Make sure the server is running.');
-    }
-}
-
 // Load location data from API
 async function loadLocationData() {
-    const routeId = document.getElementById('routeSelect').value;
-    let url = `${API_BASE_URL}/locations`;
-    
-    if (routeId) {
-        url += `?routeId=${routeId}`;
-    }
+    const url = `${API_BASE_URL}/locations`;
     
     try {
         console.log('Loading location data from:', url);
@@ -427,7 +377,7 @@ async function fetchDirectionsPath(points, lineColor) {
                     .slice(0, 23)
                     .map(point => ({
                         location: new google.maps.LatLng(point.lat, point.lng),
-                        stopover: false
+                        stopover: false  // Treat as intermediate waypoints without forcing full stopovers
                     }));
             }
             
@@ -435,8 +385,8 @@ async function fetchDirectionsPath(points, lineColor) {
                 origin: new google.maps.LatLng(origin.lat, origin.lng),
                 destination: new google.maps.LatLng(destination.lat, destination.lng),
                 waypoints: waypointsList,
-                travelMode: google.maps.TravelMode.WALKING,
-                optimizeWaypoints: false
+                optimizeWaypoints: false,  // Keep original order, don't reorder waypoints
+                travelMode: google.maps.TravelMode.WALKING
             };
             
             directionsService.route(request, (result, status) => {

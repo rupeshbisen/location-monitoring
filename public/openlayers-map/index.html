@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Monitoring - OpenLayers Route Tracker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@8.2.0/ol.css" type="text/css">
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📍 Location Monitoring System</h1>
+            <p>Track and visualize location routes with playback controls (OpenLayers + OSM)</p>
+        </header>
+
+        <div class="controls-panel">
+            <div class="filter-section">
+                <button id="loadDataBtn" class="btn btn-primary">Load Data</button>
+            </div>
+
+            <div class="playback-controls">
+                <h3>Playback Controls</h3>
+                <div class="controls-buttons">
+                    <button id="playBtn" class="btn btn-success" disabled>▶️ Play</button>
+                    <button id="pauseBtn" class="btn btn-warning" disabled>⏸️ Pause</button>
+                    <button id="resetBtn" class="btn btn-info" disabled>⏮️ Reset</button>
+                </div>
+                
+                <div class="speed-control">
+                    <label for="speedSlider">Speed: <span id="speedValue">1x</span></label>
+                    <input type="range" id="speedSlider" min="0.5" max="5" step="0.5" value="1">
+                </div>
+
+                <div class="timeline-control">
+                    <label for="timelineSlider">Timeline</label>
+                    <input type="range" id="timelineSlider" min="0" max="100" value="0" disabled>
+                    <div class="timeline-info">
+                        <span id="currentTime">00:00:00</span> / <span id="totalTime">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3>Route Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Points:</span>
+                        <span id="totalPoints" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Distance:</span>
+                        <span id="routeDistance" class="stat-value">0 km</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Check-ins:</span>
+                        <span id="checkIns" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Check-outs:</span>
+                        <span id="checkOuts" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Visits:</span>
+                        <span id="visits" class="stat-value">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="legend-section">
+                <h3>Legend</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-icon check-in">📍</span>
+                        <span>Check-in</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon check-out">🏁</span>
+                        <span>Check-out</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon visit">🏢</span>
+                        <span>Visit</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon normal">📌</span>
+                        <span>Normal Point</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <!-- OpenLayers JavaScript - Load from CDN or use local copy -->
+    <script src="https://cdn.jsdelivr.net/npm/ol@8.2.0/dist/ol.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

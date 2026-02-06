@@ -2,31 +2,68 @@
 
 A minimal OpenLayers implementation of the Location Monitoring System. This version uses OpenStreetMap tiles instead of Google Maps, requiring no API key.
 
-## What's Different
+## Overview
 
-- **Map Library**: Uses OpenLayers instead of Google Maps
-- **Map Tiles**: Free OpenStreetMap tiles (no API key needed)
-- **Backend**: Shares the same backend API from the root directory
+OpenLayers MVP is a frontend-only implementation that replaces Google Maps with OpenLayers (OpenStreetMap tiles).
+
+**Architecture:**
+- **Backend**: Shared with Google Maps version at `../backend/server.js`
+- **Frontend**: Independent OpenLayers implementation in `public/`
+- **Database**: Shared `location_data.json` file
+
+## What's Different from Google Maps
+
+### Key Changes
+
+1. **Map Initialization**: `google.maps.Map` → `ol.Map`
+2. **Tiles**: Google Maps → OpenStreetMap (free, no API key)
+3. **Markers**: Google markers → OpenLayers vector features
+4. **Popups**: InfoWindow → OpenLayers Overlay
+5. **Lines**: Google Polyline → OpenLayers LineString
+
+### What's the Same
+
+- All API endpoints (backend is shared)
+- Database and data format
+- UI layout and controls
+- All features and functionality
+
+### Benefits
+
+- No API key required
+- No usage limits
+- Free to use
+- Open source
+- Privacy focused (no data sent to Google)
 
 ## Quick Start
 
-1. Start the backend server from the root directory:
-   ```bash
-   cd ..
-   npm start
-   ```
+### 1. Start the Backend
 
-2. The backend serves from the `public/` directory by default (Google Maps version)
+From the root directory:
+```bash
+cd /home/runner/work/location-monitoring/location-monitoring
+npm start
+```
 
-3. To use the OpenLayers version, copy the files:
-   ```bash
-   # From root directory
-   cp -r openlayers-mvp/public/* public/
-   ```
+### 2. Switch to OpenLayers
 
-4. Open your browser to `http://localhost:3000`
+Copy the OpenLayers frontend:
+```bash
+cp -r openlayers-mvp/public/* public/
+```
 
-5. Click "Load Sample Data" then "Load Data" to see the map
+### 3. Open in Browser
+
+Navigate to: `http://localhost:3000`
+
+### 4. Load Data
+
+1. Click "Load Sample Data"
+2. Click "Load Data"
+3. Click "Play" to see animated playback
+
+That's it!
 
 ## Features
 
@@ -39,12 +76,21 @@ A minimal OpenLayers implementation of the Location Monitoring System. This vers
 
 ## Files
 
-- `public/index.html` - Main HTML file with OpenLayers integration
-- `public/app.js` - OpenLayers implementation
-- `public/style.css` - Styling
+```
+openlayers-mvp/
+├── public/
+│   ├── index.html    # OpenLayers HTML
+│   ├── app.js        # OpenLayers implementation (~600 lines)
+│   └── style.css     # Styling
+└── README.md         # This file
+```
+
+## Compatibility
+
+100% API compatible with Google Maps version. Mobile apps work with either version without code changes.
 
 ## Notes
 
 - Uses the shared backend at `../backend/server.js`
 - No backend duplication - only frontend differs
-- 100% API compatible with Google Maps version
+- Frontend-only implementation

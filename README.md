@@ -22,12 +22,34 @@ location-monitoring/
 │   ├── server.js           # Node.js HTTP server with REST API
 │   └── location_data.json  # JSON file database (auto-generated)
 ├── public/
-│   ├── index.html          # Main HTML file
+│   ├── index.html          # Main HTML file (Google Maps)
 │   ├── app.js              # JavaScript logic and Google Maps integration
-│   └── style.css           # CSS styling
+│   ├── style.css           # CSS styling (shared)
+│   ├── leaflet-map/        # Leaflet MVP (alternative, no API key needed)
+│   │   ├── index.html
+│   │   └── app.js
+│   └── openlayers-map/     # OpenLayers MVP (alternative, no API key needed)
+│       ├── index.html
+│       └── app.js
 ├── package.json
 └── README.md
 ```
+
+## 🗺️ Map Alternatives
+
+This project includes three map implementations:
+
+1. **Google Maps** (`public/index.html`) - Main implementation with Google Maps API
+   - Requires API key
+   - Road-following routes with Directions API
+   
+2. **Leaflet** (`public/leaflet-map/`) - Lightweight alternative with OpenStreetMap
+   - No API key required
+   - Free and open source
+   
+3. **OpenLayers** (`public/openlayers-map/`) - Feature-rich alternative with OpenStreetMap
+   - No API key required
+   - More features and customization options
 
 ## 🚀 Getting Started
 

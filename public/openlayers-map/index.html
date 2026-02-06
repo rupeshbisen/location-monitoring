@@ -3,26 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Location Monitoring - OpenLayers MVP</title>
-    <!-- OpenLayers CSS - Load from CDN or use local copy -->
+    <title>Location Monitoring - OpenLayers Route Tracker</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@8.2.0/ol.css" type="text/css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../style.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>📍 Location Monitoring System</h1>
-            <p>Track and visualize location routes with playback controls - OpenLayers MVP</p>
+            <p>Track and visualize location routes with playback controls (OpenLayers + OSM)</p>
         </header>
 
         <div class="controls-panel">
             <div class="filter-section">
-                <label for="routeSelect">Select Route:</label>
-                <select id="routeSelect">
-                    <option value="">All Routes</option>
-                </select>
                 <button id="loadDataBtn" class="btn btn-primary">Load Data</button>
-                <button id="loadSampleBtn" class="btn btn-secondary">Load Sample Data</button>
             </div>
 
             <div class="playback-controls">
@@ -34,8 +28,8 @@
                 </div>
                 
                 <div class="speed-control">
-                    <label for="speedSlider">Speed: <span id="speedValue">0.5x</span></label>
-                    <input type="range" id="speedSlider" min="0.5" max="5" step="0.5" value="0.5">
+                    <label for="speedSlider">Speed: <span id="speedValue">1x</span></label>
+                    <input type="range" id="speedSlider" min="0.5" max="5" step="0.5" value="1">
                 </div>
 
                 <div class="timeline-control">

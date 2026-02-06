@@ -188,7 +188,16 @@ const server = http.createServer((req, res) => {
     // Serve static files from public directory
     else if (req.method === 'GET') {
         let filePath = path.join(__dirname, '..', 'public', pathname === '/' ? 'index.html' : pathname);
-        const extname = path.extname(filePath);
+        // Serve index.html for directory paths like /leaflet-map/ or /leaflet-map
+        if (filePath.endsWith('/') || filePath.endsWith(path.sep)) {
+            filePath = path.join(filePath, 'index.html');
+        }
+        let extname = path.extname(filePath);
+        // If no extension, try as directory with index.html
+        if (!extname) {
+            filePath = path.join(filePath, 'index.html');
+            extname = '.html';
+        }
         
         const contentTypes = {
             '.html': 'text/html',
@@ -228,4 +237,5 @@ server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
     console.log(`API endpoints:`);
     console.log(`  GET  /api/locations - Get all locations (with optional filters)`);
+    console.log(`  Leaflet Map UI: http://localhost:${PORT}/leaflet-map/`);
 });

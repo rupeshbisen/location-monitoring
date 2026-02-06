@@ -272,6 +272,7 @@ header p {
 
 .stats-grid {
     display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
 }
 
@@ -373,10 +374,6 @@ header p {
     .controls-buttons {
         flex-direction: column;
     }
-
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
 }
 
 /* Loading animation */
@@ -393,4 +390,73 @@ header p {
     border-radius: 50%;
     border-top-color: white;
     animation: spin 1s ease-in-out infinite;
+}
+
+/* ── Leaflet marker icons (used by /leaflet-map) ──────── */
+.lm-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    line-height: 1;
+}
+
+.lm-marker-normal {
+    width: 22px;
+    height: 22px;
+    background: #667eea;
+    font-size: 9px;
+}
+
+.lm-marker-start {
+    width: 30px;
+    height: 30px;
+    background: #28a745;
+    font-size: 14px;
+    z-index: 900 !important;
+}
+
+.lm-marker-end {
+    width: 30px;
+    height: 30px;
+    background: #dc3545;
+    font-size: 14px;
+    z-index: 900 !important;
+}
+
+.lm-marker-checkin {
+    width: 26px;
+    height: 26px;
+    background: #28a745;
+    z-index: 800 !important;
+}
+
+.lm-marker-checkout {
+    width: 26px;
+    height: 26px;
+    background: #dc3545;
+    z-index: 800 !important;
+}
+
+.lm-marker-visit {
+    width: 26px;
+    height: 26px;
+    background: #ffc107;
+    color: #333;
+    z-index: 800 !important;
+}
+
+.lm-vehicle {
+    width: 16px;
+    height: 16px;
+    background: #667eea;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.7);
+    z-index: 1100 !important;
 }

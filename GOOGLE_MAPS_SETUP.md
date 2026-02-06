@@ -16,11 +16,20 @@ This guide will help you set up a Google Maps API key for the Location Monitorin
 4. Enter a project name (e.g., "Location Monitoring")
 5. Click "Create"
 
-### 2. Enable the Maps JavaScript API
+### 2. Enable Required APIs
 
+You need to enable **two APIs** for full functionality:
+
+#### Maps JavaScript API
 1. In the Google Cloud Console, go to "APIs & Services" > "Library"
 2. Search for "Maps JavaScript API"
 3. Click on "Maps JavaScript API"
+4. Click "Enable"
+
+#### Directions API (Required for road-following routes)
+1. Go back to "APIs & Services" > "Library"
+2. Search for "Directions API"
+3. Click on "Directions API"
 4. Click "Enable"
 
 ### 3. Create API Credentials
@@ -44,25 +53,27 @@ For production:
 #### API Restrictions
 - Select "Restrict key"
 - Check "Maps JavaScript API"
+- Check "Directions API"
 - Click "Save"
 
 ### 5. Update Your Application
 
-Open `public/index.html` and replace `YOUR_API_KEY` with your actual API key:
+Open `public/index.html` and find the Google Maps script tag near the end of the file:
 
 ```html
-<!-- Find this line near the end of the file -->
 <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_ACTUAL_API_KEY_HERE&callback=initMap">
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap&libraries=geometry">
 </script>
 ```
 
-Replace it with:
+Replace `YOUR_API_KEY` with your actual API key:
 ```html
 <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA...your-key-here&callback=initMap">
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA...your-key-here&callback=initMap&libraries=geometry">
 </script>
 ```
+
+> **Note**: The `libraries=geometry` parameter is required for route calculations.
 
 ### 6. Test Your Setup
 
@@ -76,8 +87,8 @@ Replace it with:
    http://localhost:3000
    ```
 
-3. Click "Load Sample Data" and then "Load Data"
-4. You should see the map with location markers
+3. Click "Load Data" to fetch and display location data
+4. You should see the map with location markers and road-following routes
 
 ## Pricing Information
 
@@ -113,8 +124,8 @@ Google Maps Platform includes:
 - **Solution**: Add your domain to API key restrictions
 
 **Error**: "ApiNotActivatedMapError"
-- **Cause**: Maps JavaScript API is not enabled
-- **Solution**: Enable Maps JavaScript API in Google Cloud Console
+- **Cause**: Required API is not enabled
+- **Solution**: Enable both Maps JavaScript API AND Directions API in Google Cloud Console
 
 ### Billing Issues
 
@@ -128,11 +139,11 @@ For development/testing without setting up Google Maps API:
 
 1. You can test the backend API using cURL:
    ```bash
-   # Load sample data
-   curl -X POST http://localhost:3000/api/sample-data
-   
-   # Get locations
+   # Get all locations
    curl http://localhost:3000/api/locations
+   
+   # Get locations with date filter
+   curl "http://localhost:3000/api/locations?startDate=2026-01-01&endDate=2026-01-31"
    ```
 
 2. Test the API endpoints directly without the frontend

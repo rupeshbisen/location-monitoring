@@ -18,6 +18,8 @@ npm start
 Output should show:
 ```
 Server running at http://localhost:3000/
+API endpoints:
+  GET  /api/locations - Get all locations (with optional filters)
 ```
 
 ### Step 3: Open in Browser
@@ -28,153 +30,106 @@ http://localhost:3000
 
 ## 🎮 First Time Usage
 
-1. **Load Sample Data**
-   - Click the "Load Sample Data" button
-   - This creates test location data with 2 routes
+1. **Set Up Google Maps API Key** (Required for map display)
+   - See the section below or [GOOGLE_MAPS_SETUP.md](GOOGLE_MAPS_SETUP.md) for detailed instructions
+   - Without an API key, the map will not display correctly
 
-2. **View the Map** (Requires Google Maps API Key)
-   - Click "Load Data" button
-   - Map will display with markers and routes
-   - Note: You'll see placeholder until you add your API key
+2. **Load Location Data**
+   - Click the "Load Data" button
+   - The map will display markers and routes from the stored location data
+   - Note: The application comes with sample data in `backend/location_data.json`
 
-3. **Try Playback Controls**
-   - Click ▶️ **Play** to start animated route playback
-   - Use the **Speed** slider to adjust animation speed
-   - Click ⏸️ **Pause** to pause
-   - Click ⏮️ **Reset** to start over
+3. **Use Playback Controls**
+   - Click ▶️ **Play** to start animated vehicle playback along the route
+   - Use the **Speed** slider (0.5x - 5x) to adjust animation speed
+   - Click ⏸️ **Pause** to pause the animation
+   - Click ⏮️ **Reset** to return to the start
+   - Drag the **Timeline** slider to jump to any point
 
 ## 🗺️ Add Your Google Maps API Key
 
-> **Important**: The map requires a Google Maps API key to function.
+> **Important**: The map requires a Google Maps API key to function properly.
 
 **Quick method:**
 1. Get your API key from [Google Cloud Console](https://console.cloud.google.com/)
-2. Open `public/index.html`
-3. Find this line (near the end):
+2. Enable both "Maps JavaScript API" and "Directions API"
+3. Open `public/index.html`
+4. Find this line near the end of the file:
    ```html
-   src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"
+   src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap&libraries=geometry"
    ```
-4. Replace `YOUR_API_KEY` with your actual key
-5. Refresh the browser
+5. Replace `YOUR_API_KEY` with your actual key
+6. Refresh the browser
 
 **Need detailed instructions?** See [GOOGLE_MAPS_SETUP.md](GOOGLE_MAPS_SETUP.md)
 
-## 📱 Test Mobile API Integration
+## 📡 Test the API
 
-Send location data from your mobile app (or test with cURL):
-
+### Get All Locations
 ```bash
-curl -X POST http://localhost:3000/api/location \
-  -H "Content-Type: application/json" \
-  -d '{
-    "lat": 28.6139,
-    "lng": 77.2090,
-    "routeId": "my-route",
-    "flag": "check_in",
-    "address": "My Location"
-  }'
+curl http://localhost:3000/api/locations
 ```
 
-Then refresh the web app and click "Load Data" to see your location!
-
-## 🔧 Common Tasks
-
-### View All Routes
+### Get Locations Within Date Range
 ```bash
-curl http://localhost:3000/api/routes
+curl "http://localhost:3000/api/locations?startDate=2026-01-01&endDate=2026-01-31"
 ```
 
-### Get Locations for a Specific Route
-```bash
-curl "http://localhost:3000/api/locations?routeId=route1"
-```
+## 📊 Understanding the Data
 
-### Clear All Data
-```bash
-curl -X POST http://localhost:3000/api/clear
-```
+The application stores location data in `backend/location_data.json`. Each location point includes:
 
-### Reload Sample Data
-```bash
-curl -X POST http://localhost:3000/api/sample-data
-```
-
-## 📱 Mobile Integration Examples
-
-### Android (Kotlin)
-```kotlin
-val location = JSONObject().apply {
-    put("lat", 28.6139)
-    put("lng", 77.2090)
-    put("routeId", "route1")
-    put("flag", "check_in")
-}
-// Send POST to http://your-server:3000/api/location
-```
-
-### React Native
-```javascript
-fetch('http://your-server:3000/api/location', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        lat: 28.6139,
-        lng: 77.2090,
-        routeId: 'route1',
-        flag: 'check_in'
-    })
-});
-```
-
-**More examples:** See [API_EXAMPLES.md](API_EXAMPLES.md)
+- **lat/lng**: Geographic coordinates
+- **routeId**: Identifier for grouping points into routes
+- **timestamp**: When the location was recorded
+- **flag**: Type of location point:
+  - `check_in` - Start of a route/shift
+  - `check_out` - End of a route/shift
+  - `visit` - Client/site visit
+  - `normal` - Regular tracking point
 
 ## 🎯 Location Flags
 
-Use these flags when sending location data:
-
-| Flag | Usage | Example |
-|------|-------|---------|
-| `check_in` | Start of work/route | Beginning of day |
-| `check_out` | End of work/route | End of day |
-| `visit` | Client/site visit | Meeting location |
-| `normal` | Regular tracking point | Movement tracking |
+| Flag | Icon | Usage |
+|------|------|-------|
+| `check_in` | 📍 | Start of work/route |
+| `check_out` | 🏁 | End of work/route |
+| `visit` | 🏢 | Client/site visit |
+| `normal` | 📌 | Regular tracking point |
 
 ## 🖥️ UI Features
 
-### Filter by Route
-1. Select a route from the dropdown
-2. Click "Load Data"
-3. Map shows only that route
-
 ### Playback Controls
-- **Play/Pause**: Start or stop animation
-- **Reset**: Return to beginning
+- **Play/Pause**: Start or stop vehicle animation
+- **Reset**: Return to beginning of route
 - **Speed**: Adjust from 0.5x to 5x
-- **Timeline**: Drag to jump to any point
+- **Timeline**: Drag slider to jump to any point
 
 ### Route Statistics
-View real-time stats:
+View real-time stats when data is loaded:
 - Total Points
-- Check-ins
-- Check-outs
-- Visits
+- Total Distance (km)
+- Check-ins count
+- Check-outs count
+- Visits count
 
-## 📚 Next Steps
+### Map Features
+- Road-following route lines (using Directions API)
+- Click markers to see location details
+- Animated vehicle during playback
+- Gap indicators for route discontinuities
 
-1. **Production Deployment**
-   - Use a proper database (MongoDB, PostgreSQL)
-   - Add authentication
-   - Set up HTTPS
+## 🔧 Common Tasks
 
-2. **Mobile App Development**
-   - Integrate location tracking
-   - Send data to API endpoints
-   - Handle offline scenarios
+### Change the Server Port
+```bash
+PORT=8080 npm start
+```
 
-3. **Customization**
-   - Modify map styles in `public/app.js`
-   - Update UI colors in `public/style.css`
-   - Add new features as needed
+### Check if Server is Running
+```bash
+curl http://localhost:3000/api/locations | head -c 100
+```
 
 ## 🐛 Troubleshooting
 
@@ -189,36 +144,22 @@ PORT=8080 npm start
 
 ### Map not loading
 - Verify Google Maps API key is correct
-- Check browser console for errors
-- Ensure Maps JavaScript API is enabled
+- Check browser console (F12) for errors
+- Ensure Maps JavaScript API AND Directions API are enabled
 
-### No data showing
-- Click "Load Sample Data" first
-- Verify server is running
+### No data showing on map
+- Verify the server is running
 - Check browser console for API errors
+- Ensure `backend/location_data.json` contains valid data
 
 ## 📖 Full Documentation
 
-- **Setup Guide**: [README.md](README.md)
+- **Full Setup Guide**: [README.md](README.md)
 - **API Reference**: [API_EXAMPLES.md](API_EXAMPLES.md)
 - **Google Maps Setup**: [GOOGLE_MAPS_SETUP.md](GOOGLE_MAPS_SETUP.md)
 
-## 💡 Tips
-
-1. **Development**: Use sample data for testing
-2. **Production**: Restrict Google Maps API key
-3. **Mobile**: Handle offline scenarios
-4. **Performance**: Use route filtering for large datasets
-
 ## 🎉 You're All Set!
 
-Your location monitoring system is ready to use. Start tracking locations from your mobile app and visualize them on the web interface!
-
-## 📞 Need Help?
-
-- Check the documentation files
-- Review API examples
-- Test with sample data first
-- Verify API key setup
+Your location monitoring system is ready to use. Load your location data and visualize routes on the map!
 
 Happy tracking! 🗺️📍

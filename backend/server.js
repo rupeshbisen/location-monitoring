@@ -81,52 +81,10 @@ function normalizeLocationData(rawData) {
     return { locations, rawData };
 }
 
-// Update stats after data change
-function updateStats(rawData, timestamp) {
-    const count = rawData.data.length;
-    rawData.total = count;
-    rawData.showing = count;
-    if (rawData.stats) {
-        rawData.stats.total_points = count;
-        rawData.stats.start_time = rawData.stats.start_time || timestamp;
-        rawData.stats.end_time = timestamp;
-    }
-}
-
-function appendLocationToRaw(rawData, locationPoint) {
-    const timestamp = typeof locationPoint.timestamp === 'string'
-        ? locationPoint.timestamp
-        : parseTimestamp(locationPoint.timestamp);
-
-    const row = [
-        locationPoint.lat,
-        locationPoint.lng,
-        locationPoint.address || '',
-        '-',
-        '-',
-        null,
-        locationPoint.routeId || 'default_route',
-        timestamp,
-        '.',
-        locationPoint.flag || 'normal'
-    ];
-
-    rawData.data = rawData.data || [];
-    rawData.data.push(row);
-    updateStats(rawData, timestamp);
-    
-    return rawData;
-}
-
 // Helper function to read normalized location data
 function readLocationData() {
     const rawData = readRawLocationData();
     return normalizeLocationData(rawData);
-}
-
-// Helper function to write location data
-function writeLocationData(data) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
 // CORS headers

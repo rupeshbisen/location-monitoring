@@ -3,225 +3,56 @@
 This document provides detailed examples of how to use the Location Monitoring API.
 
 ## Table of Contents
-1. [Basic Usage](#basic-usage)
-2. [Mobile App Integration](#mobile-app-integration)
-3. [Testing with cURL](#testing-with-curl)
-4. [Response Examples](#response-examples)
+1. [Available Endpoints](#available-endpoints)
+2. [Testing with cURL](#testing-with-curl)
+3. [Response Examples](#response-examples)
+4. [Data Format](#data-format)
+5. [JavaScript Integration](#javascript-integration)
 
-## Basic Usage
+## Available Endpoints
 
-### 1. Start the Server
-```bash
-npm start
-```
+The Location Monitoring API currently provides the following endpoint:
 
-The server will start on port 3000 by default.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/locations` | Retrieve all location data with optional date filters |
 
-### 2. Load Sample Data (For Testing)
-```bash
-curl -X POST http://localhost:3000/api/sample-data
-```
+## API Reference
 
-Response:
+### GET /api/locations
+
+Retrieve all location data with optional date filtering.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `startDate` | ISO 8601 string | No | Filter locations from this date |
+| `endDate` | ISO 8601 string | No | Filter locations until this date |
+
+**Response:**
 ```json
 {
   "success": true,
-  "message": "Sample data added",
-  "count": 12
-}
-```
-
-### 3. Retrieve All Locations
-```bash
-curl http://localhost:3000/api/locations
-```
-
-### 4. Filter by Route
-```bash
-curl "http://localhost:3000/api/locations?routeId=route1"
-```
-
-### 5. Get Available Routes
-```bash
-curl http://localhost:3000/api/routes
-```
-
-Response:
-```json
-{
-  "success": true,
-  "data": ["route1", "route2"]
-}
-```
-
-## Mobile App Integration
-
-### Android (Java)
-
-```java
-import org.json.JSONObject;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-
-public class LocationTracker {
-    
-    private static final String API_URL = "http://your-server:3000/api/location";
-    
-    public void sendLocation(double lat, double lng, String flag, String routeId) {
-        try {
-            URL url = new URL(API_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setDoOutput(true);
-            
-            JSONObject location = new JSONObject();
-            location.put("lat", lat);
-            location.put("lng", lng);
-            location.put("flag", flag);
-            location.put("routeId", routeId);
-            location.put("address", "Current Location");
-            location.put("timestamp", System.currentTimeMillis());
-            
-            OutputStream os = conn.getOutputStream();
-            os.write(location.toString().getBytes());
-            os.flush();
-            os.close();
-            
-            int responseCode = conn.getResponseCode();
-            System.out.println("Response Code: " + responseCode);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+  "data": [
+    {
+      "id": 1,
+      "lat": 21.090064,
+      "lng": 79.091735,
+      "address": "",
+      "routeId": "Sandeep",
+      "timestamp": "2026-01-12T09:20:00.000Z",
+      "flag": "normal"
     }
-}
-```
-
-### Android (Kotlin)
-
-```kotlin
-import okhttp3.*
-import org.json.JSONObject
-import java.io.IOException
-
-class LocationTracker {
-    
-    private val client = OkHttpClient()
-    private val apiUrl = "http://your-server:3000/api/location"
-    
-    fun sendLocation(lat: Double, lng: Double, flag: String, routeId: String) {
-        val json = JSONObject().apply {
-            put("lat", lat)
-            put("lng", lng)
-            put("flag", flag)
-            put("routeId", routeId)
-            put("address", "Current Location")
-            put("timestamp", System.currentTimeMillis())
-        }
-        
-        val body = RequestBody.create(
-            MediaType.parse("application/json"),
-            json.toString()
-        )
-        
-        val request = Request.Builder()
-            .url(apiUrl)
-            .post(body)
-            .build()
-        
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
-            }
-            
-            override fun onResponse(call: Call, response: Response) {
-                println("Response: ${response.body()?.string()}")
-            }
-        })
-    }
-}
-```
-
-### React Native
-
-```javascript
-const API_URL = 'http://your-server:3000/api/location';
-
-export const sendLocation = async (lat, lng, flag, routeId) => {
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        lat: lat,
-        lng: lng,
-        flag: flag,
-        routeId: routeId,
-        address: 'Current Location',
-        timestamp: new Date().toISOString()
-      })
-    });
-    
-    const result = await response.json();
-    console.log('Location sent:', result);
-    return result;
-  } catch (error) {
-    console.error('Error sending location:', error);
-    throw error;
-  }
-};
-
-// Usage example
-import * as Location from 'expo-location';
-
-const trackLocation = async () => {
-  const { coords } = await Location.getCurrentPositionAsync();
-  await sendLocation(
-    coords.latitude,
-    coords.longitude,
-    'normal',
-    'route1'
-  );
-};
-```
-
-### Flutter (Dart)
-
-```dart
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
-class LocationTracker {
-  static const String apiUrl = 'http://your-server:3000/api/location';
-  
-  Future<void> sendLocation(
-    double lat,
-    double lng,
-    String flag,
-    String routeId
-  ) async {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'lat': lat,
-        'lng': lng,
-        'flag': flag,
-        'routeId': routeId,
-        'address': 'Current Location',
-        'timestamp': DateTime.now().toIso8601String(),
-      }),
-    );
-    
-    if (response.statusCode == 201) {
-      print('Location sent successfully');
-      print(response.body);
-    } else {
-      print('Failed to send location: ${response.statusCode}');
+  ],
+  "routes": {
+    "Sandeep": {
+      "waypoints": [{"lat": 21.090064, "lng": 79.091735}, ...],
+      "totalPoints": 10,
+      "totalDistance": "5.23",
+      "startTime": "2026-01-12T09:20:00.000Z",
+      "endTime": "2026-01-12T10:00:00.000Z",
+      "duration": "0h 40m"
     }
   }
 }
@@ -229,157 +60,260 @@ class LocationTracker {
 
 ## Testing with cURL
 
-### Submit a Check-in Location
+### Get All Locations
 ```bash
-curl -X POST http://localhost:3000/api/location \
-  -H "Content-Type: application/json" \
-  -d '{
-    "lat": 28.6139,
-    "lng": 77.2090,
-    "routeId": "route1",
-    "flag": "check_in",
-    "address": "Office - Start of Day"
-  }'
+curl http://localhost:3000/api/locations
 ```
 
-### Submit a Visit Location
+### Get Locations with Pretty Print
 ```bash
-curl -X POST http://localhost:3000/api/location \
-  -H "Content-Type: application/json" \
-  -d '{
-    "lat": 28.6159,
-    "lng": 77.2110,
-    "routeId": "route1",
-    "flag": "visit",
-    "address": "Client Site - ABC Company"
-  }'
-```
-
-### Submit a Check-out Location
-```bash
-curl -X POST http://localhost:3000/api/location \
-  -H "Content-Type: application/json" \
-  -d '{
-    "lat": 28.6199,
-    "lng": 77.2150,
-    "routeId": "route1",
-    "flag": "check_out",
-    "address": "Office - End of Day"
-  }'
-```
-
-### Get Locations for a Specific Route
-```bash
-curl "http://localhost:3000/api/locations?routeId=route1"
+curl http://localhost:3000/api/locations | jq
 ```
 
 ### Get Locations Within Date Range
 ```bash
-curl "http://localhost:3000/api/locations?startDate=2024-02-01&endDate=2024-02-28"
+curl "http://localhost:3000/api/locations?startDate=2026-01-01&endDate=2026-01-31"
 ```
 
-### Clear All Data
+### Get Locations Starting From a Date
 ```bash
-curl -X POST http://localhost:3000/api/clear
+curl "http://localhost:3000/api/locations?startDate=2026-01-12"
+```
+
+### Get Locations Until a Date
+```bash
+curl "http://localhost:3000/api/locations?endDate=2026-01-15"
 ```
 
 ## Response Examples
 
-### Successful Location Submission
-```json
-{
-  "success": true,
-  "message": "Location saved",
-  "data": {
-    "lat": 28.6139,
-    "lng": 77.2090,
-    "routeId": "route1",
-    "flag": "check_in",
-    "address": "Office - Start of Day",
-    "timestamp": "2024-02-03T08:00:00.000Z",
-    "id": 1707123456789.123
-  }
-}
-```
-
-### Get Locations Response
+### Successful Response with Data
 ```json
 {
   "success": true,
   "data": [
     {
       "id": 1,
-      "lat": 28.6139,
-      "lng": 77.2090,
-      "timestamp": "2024-02-03T08:00:00Z",
-      "routeId": "route1",
-      "flag": "check_in",
-      "address": "Start Point - Delhi"
+      "lat": 21.090064351563512,
+      "lng": 79.09173538332449,
+      "address": "",
+      "routeId": "Sandeep",
+      "timestamp": "2026-01-12T09:20:00.000Z",
+      "flag": "normal"
     },
     {
       "id": 2,
-      "lat": 28.6149,
-      "lng": 77.2100,
-      "timestamp": "2024-02-03T08:05:00Z",
-      "routeId": "route1",
-      "flag": "normal",
-      "address": "Moving through Delhi"
+      "lat": 21.090941900209458,
+      "lng": 79.09418992601712,
+      "address": "",
+      "routeId": "Sandeep",
+      "timestamp": "2026-01-12T09:20:30.000Z",
+      "flag": "normal"
     }
-  ]
+  ],
+  "routes": {
+    "Sandeep": {
+      "waypoints": [
+        {"lat": 21.090064351563512, "lng": 79.09173538332449},
+        {"lat": 21.090941900209458, "lng": 79.09418992601712}
+      ],
+      "totalPoints": 2,
+      "totalDistance": "0.35",
+      "startTime": "2026-01-12T09:20:00.000Z",
+      "endTime": "2026-01-12T09:20:30.000Z",
+      "duration": "0h 0m"
+    }
+  }
 }
 ```
 
-### Error Response
+### Empty Response (No Data)
+```json
+{
+  "success": true,
+  "data": [],
+  "routes": {}
+}
+```
+
+## Data Format
+
+### Location Object Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | number | Unique identifier (1-indexed) |
+| `lat` | number | Latitude coordinate |
+| `lng` | number | Longitude coordinate |
+| `address` | string | Address description (may be empty) |
+| `routeId` | string | Route identifier for grouping |
+| `timestamp` | string | ISO 8601 timestamp |
+| `flag` | string | Location type flag |
+
+### Location Flags
+
+| Flag | Description | Usage |
+|------|-------------|-------|
+| `check_in` | Start point | Beginning of a route or shift |
+| `check_out` | End point | End of a route or shift |
+| `visit` | Visit location | Client site or meeting location |
+| `normal` | Regular point | Standard tracking point |
+
+### Route Object Fields (in routes response)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `waypoints` | array | Array of {lat, lng} coordinate objects |
+| `totalPoints` | number | Number of location points in route |
+| `totalDistance` | string | Total distance in kilometers |
+| `startTime` | string | ISO 8601 timestamp of first point |
+| `endTime` | string | ISO 8601 timestamp of last point |
+| `duration` | string | Formatted duration (e.g., "2h 30m") |
+
+## JavaScript Integration
+
+### Fetch Locations from Browser
+```javascript
+async function loadLocations() {
+  try {
+    const response = await fetch('/api/locations');
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log(`Loaded ${result.data.length} location points`);
+      console.log('Routes:', Object.keys(result.routes));
+      return result.data;
+    } else {
+      console.error('Failed to load locations');
+      return [];
+    }
+  } catch (error) {
+    console.error('Error loading locations:', error);
+    return [];
+  }
+}
+```
+
+### Fetch Locations with Date Filter
+```javascript
+async function loadLocationsInRange(startDate, endDate) {
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  
+  const url = `/api/locations?${params.toString()}`;
+  
+  try {
+    const response = await fetch(url);
+    const result = await response.json();
+    return result.success ? result.data : [];
+  } catch (error) {
+    console.error('Error:', error);
+    return [];
+  }
+}
+
+// Example usage
+const locations = await loadLocationsInRange('2026-01-01', '2026-01-31');
+```
+
+### Node.js Example
+```javascript
+const http = require('http');
+
+function getLocations() {
+  return new Promise((resolve, reject) => {
+    http.get('http://localhost:3000/api/locations', (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          resolve(result);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+// Usage
+getLocations()
+  .then(result => {
+    console.log('Total locations:', result.data.length);
+    console.log('Routes:', Object.keys(result.routes));
+  })
+  .catch(console.error);
+```
+
+## Data Storage
+
+Location data is stored in `backend/location_data.json`. The file uses this structure:
+
+```json
+{
+  "status": "success",
+  "data": [
+    [21.090064, 79.091735, "", "-", "-", null, "RouteId", "2026-01-12T09:20:00.000Z", ".", "normal"],
+    ...
+  ],
+  "total": 10,
+  "showing": 10,
+  "processing_time": "0ms",
+  "stats": {
+    "total_points": 10,
+    "visit_points": 0,
+    "start_time": "2026-01-12T09:20:00.000Z",
+    "end_time": "2026-01-12T10:00:00.000Z"
+  }
+}
+```
+
+### Raw Data Array Format (per row)
+| Index | Content | Example |
+|-------|---------|---------|
+| 0 | Latitude | `21.090064` |
+| 1 | Longitude | `79.091735` |
+| 2 | Address | `""` |
+| 3 | Reserved | `"-"` |
+| 4 | Reserved | `"-"` |
+| 5 | Reserved | `null` |
+| 6 | Route ID | `"Sandeep"` |
+| 7 | Timestamp | `"2026-01-12T09:20:00.000Z"` |
+| 8 | Reserved | `"."` |
+| 9 | Flag | `"normal"` |
+
+## Error Handling
+
+### 404 Not Found
+When accessing an unknown endpoint:
 ```json
 {
   "success": false,
-  "message": "Invalid data format"
+  "message": "Not found"
 }
 ```
 
-## Location Flags
+### CORS Support
+The API includes CORS headers allowing cross-origin requests:
+- `Access-Control-Allow-Origin: *`
+- `Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS`
+- `Access-Control-Allow-Headers: Content-Type`
 
-The system supports the following flag types:
+## Tips
 
-- **check_in**: User checked in at the start of a route/shift
-- **check_out**: User checked out at the end of a route/shift
-- **visit**: User visited a client location or site
-- **normal**: Regular tracking point during movement
-
-## Best Practices
-
-1. **Use Meaningful Route IDs**: Use date-based or session-based route IDs
-   ```
-   routeId: "2024-02-03-morning"
-   routeId: "user123-2024-02-03"
-   ```
-
-2. **Include Addresses**: When possible, include human-readable addresses
-   ```json
-   "address": "123 Main St, Delhi"
-   ```
-
-3. **Send Timestamps**: Always include timestamps with location data
-   ```json
-   "timestamp": "2024-02-03T08:00:00Z"
-   ```
-
-4. **Handle Errors**: Implement proper error handling in your mobile app
-   ```javascript
-   try {
-     await sendLocation(lat, lng, flag, routeId);
-   } catch (error) {
-     // Store locally and retry later
-     storeOffline(locationData);
-   }
-   ```
-
-5. **Batch Updates**: For offline scenarios, store locations locally and send in batches when online
+1. **Date Format**: Use ISO 8601 format for date filters (e.g., `2026-01-15T00:00:00Z`)
+2. **Sorting**: Locations are automatically sorted by timestamp (ascending)
+3. **Route Info**: The `routes` object provides pre-calculated statistics per route
+4. **Distance**: Distances are calculated using the Haversine formula (straight-line)
 
 ## Next Steps
 
-1. Implement authentication for production use
-2. Add user management
-3. Integrate with a database (MongoDB, PostgreSQL)
-4. Add real-time updates using WebSockets
-5. Implement offline support in mobile apps
+To extend the API functionality, consider implementing:
+1. `POST /api/location` - Submit new location data
+2. `GET /api/routes` - List all route IDs
+3. `DELETE /api/location/:id` - Delete a specific location
+4. `POST /api/clear` - Clear all location data
+5. Authentication and authorization
+6. Database integration (MongoDB, PostgreSQL)

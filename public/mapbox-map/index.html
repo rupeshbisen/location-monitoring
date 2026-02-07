@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapbox Location Monitoring - MVP</title>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css' rel='stylesheet' />
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* Mapbox-specific styles */
+        #map {
+            width: 100%;
+            height: 600px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .mapboxgl-popup-content {
+            padding: 15px;
+            max-width: 300px;
+        }
+        
+        .popup-info {
+            margin: 5px 0;
+        }
+        
+        .popup-info strong {
+            color: #667eea;
+        }
+        
+        .api-key-banner {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .api-key-banner a {
+            color: #0056b3;
+            font-weight: bold;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .loading-overlay.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .route-select {
+            margin: 10px 0;
+        }
+        
+        .route-select select {
+            padding: 8px 12px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .info-panel {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .info-panel h4 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+        }
+        
+        .info-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ Mapbox Location Monitoring MVP</h1>
+            <p>Advanced location tracking with road-snapped routes and playback controls</p>
+        </header>
+
+        <div class="api-key-banner" id="apiKeyBanner">
+            ⚠️ <strong>API Key Required:</strong> 
+            Please add your Mapbox access token in the app.js file. 
+            <a href="https://account.mapbox.com/access-tokens/" target="_blank">Get your free token here</a> 
+            (50,000 free requests/month)
+        </div>
+
+        <div class="controls-panel">
+            <div class="filter-section">
+                <button id="loadDataBtn" class="btn btn-primary">🔄 Load Data</button>
+                <div class="route-select" id="routeSelectContainer" style="display: none;">
+                    <label for="routeSelect">Select Route:</label>
+                    <select id="routeSelect"></select>
+                </div>
+            </div>
+
+            <div class="info-panel" id="infoPanel" style="display: none;">
+                <h4>📊 Current Route Information</h4>
+                <div class="info-item"><strong>Route ID:</strong> <span id="currentRouteId">-</span></div>
+                <div class="info-item"><strong>Employee:</strong> <span id="currentEmployee">-</span></div>
+                <div class="info-item"><strong>Date:</strong> <span id="currentDate">-</span></div>
+                <div class="info-item"><strong>Duration:</strong> <span id="currentDuration">-</span></div>
+            </div>
+
+            <div class="playback-controls">
+                <h3>▶️ Playback Controls</h3>
+                <div class="controls-buttons">
+                    <button id="playBtn" class="btn btn-success" disabled>▶️ Play</button>
+                    <button id="pauseBtn" class="btn btn-warning" disabled>⏸️ Pause</button>
+                    <button id="resetBtn" class="btn btn-info" disabled>⏮️ Reset</button>
+                </div>
+                
+                <div class="speed-control">
+                    <label for="speedSlider">Speed: <span id="speedValue">1x</span></label>
+                    <input type="range" id="speedSlider" min="0.5" max="5" step="0.5" value="1">
+                </div>
+
+                <div class="timeline-control">
+                    <label for="timelineSlider">Timeline</label>
+                    <input type="range" id="timelineSlider" min="0" max="100" value="0" disabled>
+                    <div class="timeline-info">
+                        <span id="currentTime">00:00:00</span> / <span id="totalTime">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3>📈 Route Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Points:</span>
+                        <span id="totalPoints" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Distance:</span>
+                        <span id="routeDistance" class="stat-value">0 km</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Check-ins:</span>
+                        <span id="checkIns" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Check-outs:</span>
+                        <span id="checkOuts" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Visits:</span>
+                        <span id="visits" class="stat-value">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="legend-section">
+                <h3>🎨 Legend</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-icon check-in">📍</span>
+                        <span>Check-in</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon check-out">🏁</span>
+                        <span>Check-out</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon visit">🏢</span>
+                        <span>Visit</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon normal">📌</span>
+                        <span>Normal Point</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon normal" style="background: #667eea;">🚗</span>
+                        <span>Current Position</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="position: relative;">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div id="loadingText">Loading map data...</div>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
+    <script src="app.js"></script>
+</body>
+</html>

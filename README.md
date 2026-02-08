@@ -24,7 +24,10 @@ location-monitoring/
 │   ├── index.html          # Main HTML file (Google Maps)
 │   ├── app.js              # JavaScript logic and Google Maps integration
 │   ├── style.css           # CSS styling (shared)
-│   ├── mapbox-map/         # 🌟 Mapbox MVP (RECOMMENDED - Best road matching)
+│   ├── tomtom-map/         # 🌟 TomTom MVP (NEW - Professional routing)
+│   │   ├── index.html
+│   │   └── app.js
+│   ├── mapbox-map/         # Mapbox MVP (Alternative - Best road matching)
 │   │   ├── index.html
 │   │   └── app.js
 │   ├── leaflet-map/        # Leaflet MVP (alternative, no API key needed)
@@ -38,14 +41,25 @@ location-monitoring/
 ├── QUICKSTART.md
 ├── API_EXAMPLES.md
 ├── GOOGLE_MAPS_SETUP.md
-└── MAPBOX_SETUP.md         # Mapbox MVP setup guide
+├── MAPBOX_SETUP.md         # Mapbox MVP setup guide
+└── TOMTOM_SETUP.md         # TomTom MVP setup guide
 ```
 
 ## 🗺️ Map Alternatives
 
-This project includes **four** map implementations:
+This project includes **five** map implementations:
 
-### 🌟 **RECOMMENDED: Mapbox MVP** (`public/mapbox-map/`)
+### 🌟 **NEW: TomTom MVP** (`public/tomtom-map/`)
+   - **✅ Professional Automotive-Grade Routing** - Used by major car manufacturers
+   - **✅ Accurate Road Data** - Best-in-class road network accuracy
+   - **✅ 2,500 free requests/day** - No credit card required
+   - **✅ Multiple Routing Profiles** - Car, pedestrian, bicycle, taxi, bus, van, motorcycle, truck
+   - **✅ Up to 150 waypoints** - Handles long routes efficiently
+   - **✅ Traffic-Aware Routing** - Real-time traffic data integration
+   - 📖 Setup: See [TOMTOM_SETUP.md](TOMTOM_SETUP.md)
+   - 🔗 Access: `http://localhost:3000/tomtom-map/`
+
+### 🌟 **Mapbox MVP** (`public/mapbox-map/`)
    - **✅ Professional Map Matching API** - GPS points follow actual roads perfectly
    - **✅ Best for Production** - Reliable, accurate, fast
    - **✅ 50,000 free requests/month** - No credit card required
@@ -57,7 +71,7 @@ This project includes **four** map implementations:
 ### Other Alternatives:
 
 1. **Google Maps** (`public/index.html`) - Traditional implementation
-   - Requires API key
+   - Requires API key and credit card
    - Road-following routes with Directions API
    - Limited to 25 waypoints per request
    
@@ -101,13 +115,26 @@ This project includes **four** map implementations:
    - Create credentials (API Key)
    - Copy the API key
 
-3. Update the Google Maps API key in `public/index.html`:
+3. Update the API key in your chosen implementation:
+
+   **For TomTom (Recommended for accurate routing):**
+   - Open `public/tomtom-map/app.js`
+   - Replace `YOUR_TOMTOM_API_KEY` with your token
+   - See detailed guide: [TOMTOM_SETUP.md](TOMTOM_SETUP.md)
+
+   **OR For Mapbox:**
+   - Open `public/mapbox-map/app.js`
+   - Replace `YOUR_MAPBOX_ACCESS_TOKEN` with your token
+   - See detailed guide: [MAPBOX_SETUP.md](MAPBOX_SETUP.md)
+
+   **OR For Google Maps:**
+   - Open `public/index.html`
+   - Replace `YOUR_API_KEY` in the script tag
    ```html
    <script async defer
        src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap&libraries=geometry">
    </script>
    ```
-   Replace `YOUR_API_KEY` with your actual API key.
 
 ### Running the Application
 
@@ -119,11 +146,21 @@ This project includes **four** map implementations:
 
 2. Open your browser and navigate to:
    ```
-   # Mapbox MVP (RECOMMENDED)
+   # TomTom MVP (RECOMMENDED - Professional routing)
+   http://localhost:3000/tomtom-map/
+   
+   # OR Mapbox MVP (Best road matching)
    http://localhost:3000/mapbox-map/
    
    # OR Google Maps
    http://localhost:3000
+   
+   # OR Leaflet (no API key needed)
+   http://localhost:3000/leaflet-map/
+   
+   # OR OpenLayers (no API key needed)
+   http://localhost:3000/openlayers-map/
+   ```
    
    # OR Leaflet (no API key needed)
    http://localhost:3000/leaflet-map/

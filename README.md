@@ -161,13 +161,6 @@ This project includes **five** map implementations:
    # OR OpenLayers (no API key needed)
    http://localhost:3000/openlayers-map/
    ```
-   
-   # OR Leaflet (no API key needed)
-   http://localhost:3000/leaflet-map/
-   
-   # OR OpenLayers (no API key needed)
-   http://localhost:3000/openlayers-map/
-   ```
 
 3. Click "Load Data" to fetch and display the location data on the map.
 

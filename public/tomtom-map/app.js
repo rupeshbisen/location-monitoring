@@ -266,29 +266,43 @@ function showStraightLineRoute(locations) {
     const coordinates = locations.map(loc => [loc.lng, loc.lat]);
     
     // Remove old straight line if exists
-    if (straightLine) {
-        straightLine.remove();
+    if (map.getLayer('route-straight')) {
+        map.removeLayer('route-straight');
+    }
+    if (map.getSource('route-straight')) {
+        map.removeSource('route-straight');
     }
     
-    // Add straight line (temporary, before road routing)
-    straightLine = new tt.Marker({
-        element: createLineElement(coordinates, '#d3d3d3', 0.5, 3)
-    }).setLngLat(coordinates[0]).addTo(map);
+    // Add straight line as GeoJSON (temporary, before road routing)
+    map.addLayer({
+        id: 'route-straight',
+        type: 'line',
+        source: {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                    type: 'LineString',
+                    coordinates: coordinates
+                }
+            }
+        },
+        layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+        },
+        paint: {
+            'line-color': '#d3d3d3',
+            'line-width': 3,
+            'line-opacity': 0.5
+        }
+    });
+    
+    straightLine = true;
     
     // Set initial roadSnappedPath to straight line for playback
     roadSnappedPath = coordinates;
-}
-
-function createLineElement(coordinates, color, opacity, width) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 600;
-    const ctx = canvas.getContext('2d');
-    
-    // This is a simplified visualization - actual line drawing is done via GeoJSON
-    const el = document.createElement('div');
-    el.style.display = 'none';
-    return el;
 }
 
 function displayMarkers(locations) {
@@ -485,10 +499,13 @@ function sampleWaypoints(locations, maxPoints) {
 
 function drawRoadRoute(coordinates) {
     // Remove straight line
-    if (straightLine) {
-        straightLine.remove();
-        straightLine = null;
+    if (map.getLayer('route-straight')) {
+        map.removeLayer('route-straight');
     }
+    if (map.getSource('route-straight')) {
+        map.removeSource('route-straight');
+    }
+    straightLine = null;
     
     // Remove old route line if exists
     if (routeLine && map.getSource('route')) {
@@ -714,11 +731,14 @@ function clearMap() {
     }
     
     // Remove straight line
-    if (straightLine) {
-        straightLine.remove();
-        straightLine = null;
+    if (map.getLayer('route-straight')) {
+        map.removeLayer('route-straight');
+    }
+    if (map.getSource('route-straight')) {
+        map.removeSource('route-straight');
     }
     
+    straightLine = null;
     routeLine = null;
     roadSnappedPath = [];
     currentPlaybackIndex = 0;

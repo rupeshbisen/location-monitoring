@@ -24,6 +24,9 @@ location-monitoring/
 │   ├── index.html          # Main HTML file (Google Maps)
 │   ├── app.js              # JavaScript logic and Google Maps integration
 │   ├── style.css           # CSS styling (shared)
+│   ├── mapbox-map/         # 🌟 Mapbox MVP (RECOMMENDED - Best road matching)
+│   │   ├── index.html
+│   │   └── app.js
 │   ├── leaflet-map/        # Leaflet MVP (alternative, no API key needed)
 │   │   ├── index.html
 │   │   └── app.js
@@ -34,24 +37,37 @@ location-monitoring/
 ├── README.md
 ├── QUICKSTART.md
 ├── API_EXAMPLES.md
-└── GOOGLE_MAPS_SETUP.md
+├── GOOGLE_MAPS_SETUP.md
+└── MAPBOX_SETUP.md         # Mapbox MVP setup guide
 ```
 
 ## 🗺️ Map Alternatives
 
-This project includes three map implementations:
+This project includes **four** map implementations:
 
-1. **Google Maps** (`public/index.html`) - Main implementation with Google Maps API
+### 🌟 **RECOMMENDED: Mapbox MVP** (`public/mapbox-map/`)
+   - **✅ Professional Map Matching API** - GPS points follow actual roads perfectly
+   - **✅ Best for Production** - Reliable, accurate, fast
+   - **✅ 50,000 free requests/month** - No credit card required
+   - **✅ Batch processing** - Handles 100 points per request
+   - **✅ Progressive enhancement** - Shows results immediately, enhances with road-snapping
+   - 📖 Setup: See [MAPBOX_SETUP.md](MAPBOX_SETUP.md)
+   - 🔗 Access: `http://localhost:3000/mapbox-map/`
+
+### Other Alternatives:
+
+1. **Google Maps** (`public/index.html`) - Traditional implementation
    - Requires API key
    - Road-following routes with Directions API
+   - Limited to 25 waypoints per request
    
-2. **Leaflet** (`public/leaflet-map/`) - Lightweight alternative with OpenStreetMap
+2. **Leaflet** (`public/leaflet-map/`) - Lightweight with OSRM
    - No API key required
-   - Free and open source
+   - Free OSRM routing (variable reliability)
    
-3. **OpenLayers** (`public/openlayers-map/`) - Feature-rich alternative with OpenStreetMap
+3. **OpenLayers** (`public/openlayers-map/`) - Feature-rich
    - No API key required
-   - More features and customization options
+   - More customization options
 
 ## 🚀 Getting Started
 
@@ -68,7 +84,17 @@ This project includes three map implementations:
    cd location-monitoring
    ```
 
-2. Get a Google Maps API Key:
+2. **Option A: Mapbox MVP (RECOMMENDED)**
+   - Go to [Mapbox Account](https://account.mapbox.com/)
+   - Sign up for free (no credit card required)
+   - Get your [Access Token](https://account.mapbox.com/access-tokens/)
+   - Open `public/mapbox-map/app.js`
+   - Replace `YOUR_MAPBOX_ACCESS_TOKEN` with your token
+   - See detailed guide: [MAPBOX_SETUP.md](MAPBOX_SETUP.md)
+
+   **OR**
+
+2. **Option B: Google Maps**
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Create a new project or select existing one
    - Enable "Maps JavaScript API" and "Directions API"
@@ -93,7 +119,17 @@ This project includes three map implementations:
 
 2. Open your browser and navigate to:
    ```
+   # Mapbox MVP (RECOMMENDED)
+   http://localhost:3000/mapbox-map/
+   
+   # OR Google Maps
    http://localhost:3000
+   
+   # OR Leaflet (no API key needed)
+   http://localhost:3000/leaflet-map/
+   
+   # OR OpenLayers (no API key needed)
+   http://localhost:3000/openlayers-map/
    ```
 
 3. Click "Load Data" to fetch and display the location data on the map.

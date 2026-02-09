@@ -42,7 +42,7 @@ location-monitoring/
 ├── API_EXAMPLES.md
 ├── GOOGLE_MAPS_SETUP.md
 ├── MAPBOX_SETUP.md         # Mapbox MVP setup guide
-└── TOMTOM_SETUP.md         # TomTom MVP setup guide
+└── TOMTOM_GUIDE.md         # TomTom MVP complete guide
 ```
 
 ## 🗺️ Map Alternatives
@@ -56,7 +56,7 @@ This project includes **five** map implementations:
    - **✅ Multiple Routing Profiles** - Car, pedestrian, bicycle, taxi, bus, van, motorcycle, truck
    - **✅ Up to 150 waypoints** - Handles long routes efficiently
    - **✅ Traffic-Aware Routing** - Real-time traffic data integration
-   - 📖 Setup: See [TOMTOM_SETUP.md](TOMTOM_SETUP.md)
+   - 📖 Setup: See [TOMTOM_GUIDE.md](TOMTOM_GUIDE.md)
    - 🔗 Access: `http://localhost:3000/tomtom-map/`
 
 ### 🌟 **Mapbox MVP** (`public/mapbox-map/`)
@@ -120,7 +120,7 @@ This project includes **five** map implementations:
    **For TomTom (Recommended for accurate routing):**
    - Open `public/tomtom-map/app.js`
    - Replace `YOUR_TOMTOM_API_KEY` with your token
-   - See detailed guide: [TOMTOM_SETUP.md](TOMTOM_SETUP.md)
+   - See detailed guide: [TOMTOM_GUIDE.md](TOMTOM_GUIDE.md)
 
    **OR For Mapbox:**
    - Open `public/mapbox-map/app.js`

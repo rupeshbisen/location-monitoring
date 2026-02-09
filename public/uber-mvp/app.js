@@ -260,7 +260,9 @@ async function fetchRoadSnappedRoute(locations) {
             const step = Math.floor(locations.length / maxPoints);
             sampledLocations = locations.filter((_, i) => i % step === 0);
             // Always include last point
-            if (sampledLocations[sampledLocations.length - 1].id !== locations[locations.length - 1].id) {
+            if (sampledLocations.length > 0 && 
+                locations.length > 0 &&
+                sampledLocations[sampledLocations.length - 1].timestamp !== locations[locations.length - 1].timestamp) {
                 sampledLocations.push(locations[locations.length - 1]);
             }
         }

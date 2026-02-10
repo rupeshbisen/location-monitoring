@@ -47,6 +47,18 @@ function initMap() {
         maxZoom: 19
     }).addTo(map);
     
+    // Fix for map tiles not loading due to container size issues
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 100);
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        if (map) {
+            map.invalidateSize();
+        }
+    });
+    
     console.log('Map initialized successfully');
 }
 

@@ -3,99 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Location Monitoring - Route Tracker</title>
+    <title>Location Monitoring - Choose Your Map</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Landing page specific styles */
+        .landing-container {
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .landing-header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .mvp-intro {
+            text-align: center;
+            padding: 30px 40px 10px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .mvp-intro p {
+            font-size: 1.1em;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .mvp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .mvp-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mvp-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .mvp-card-icon {
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+        }
+
+        .mvp-card-content {
+            padding: 20px 25px 25px;
+            flex: 1;
+        }
+
+        .mvp-card-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .mvp-card-description {
+            font-size: 0.95em;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .mvp-card-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-top: 12px;
+            text-transform: uppercase;
+        }
+
+        .badge-free {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-api-key {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        /* Color themes for cards */
+        .card-leaflet .mvp-card-icon {
+            background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);
+        }
+
+        .card-google .mvp-card-icon {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+        }
+
+        .card-mapbox .mvp-card-icon {
+            background: linear-gradient(135deg, #3b5998 0%, #8b9dc3 100%);
+        }
+
+        .card-openlayers .mvp-card-icon {
+            background: linear-gradient(135deg, #1faad8 0%, #00bcd4 100%);
+        }
+
+        .card-tomtom .mvp-card-icon {
+            background: linear-gradient(135deg, #e53935 0%, #ef5350 100%);
+        }
+
+        .card-uber .mvp-card-icon {
+            background: linear-gradient(135deg, #000000 0%, #333333 100%);
+        }
+
+        .landing-footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: auto;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
+    <div class="landing-container">
+        <header class="landing-header">
             <h1>📍 Location Monitoring System</h1>
-            <p>Track and visualize location routes with playback controls</p>
         </header>
 
-        <div class="controls-panel">
-            <div class="filter-section">
-                <button id="loadDataBtn" class="btn btn-primary">Load Data</button>
-            </div>
-
-            <div class="playback-controls">
-                <h3>Playback Controls</h3>
-                <div class="controls-buttons">
-                    <button id="playBtn" class="btn btn-success" disabled>▶️ Play</button>
-                    <button id="pauseBtn" class="btn btn-warning" disabled>⏸️ Pause</button>
-                    <button id="resetBtn" class="btn btn-info" disabled>⏮️ Reset</button>
-                </div>
-                
-                <div class="speed-control">
-                    <label for="speedSlider">Speed: <span id="speedValue">0.5x</span></label>
-                    <input type="range" id="speedSlider" min="0.5" max="5" step="0.5" value="0.5">
-                </div>
-
-                <div class="timeline-control">
-                    <label for="timelineSlider">Timeline</label>
-                    <input type="range" id="timelineSlider" min="0" max="100" value="0" disabled>
-                    <div class="timeline-info">
-                        <span id="currentTime">00:00:00</span> / <span id="totalTime">00:00:00</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stats-section">
-                <h3>Route Statistics</h3>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">Total Points:</span>
-                        <span id="totalPoints" class="stat-value">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Distance:</span>
-                        <span id="routeDistance" class="stat-value">0 km</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Check-ins:</span>
-                        <span id="checkIns" class="stat-value">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Check-outs:</span>
-                        <span id="checkOuts" class="stat-value">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Visits:</span>
-                        <span id="visits" class="stat-value">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="legend-section">
-                <h3>Legend</h3>
-                <div class="legend-items">
-                    <div class="legend-item">
-                        <span class="legend-icon check-in">📍</span>
-                        <span>Check-in</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-icon check-out">🏁</span>
-                        <span>Check-out</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-icon visit">🏢</span>
-                        <span>Visit</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-icon normal">📌</span>
-                        <span>Normal Point</span>
-                    </div>
-                </div>
-            </div>
+        <div class="mvp-intro">
+            <p>Track and visualize location routes with multiple map providers. Choose your preferred map implementation below.</p>
         </div>
 
-        <div id="map"></div>
-    </div>
+        <div class="mvp-grid">
+            <a href="/leaflet-map/" class="mvp-card card-leaflet">
+                <div class="mvp-card-icon">🗺️</div>
+                <div class="mvp-card-content">
+                    <h2 class="mvp-card-title">Leaflet + OpenStreetMap</h2>
+                    <p class="mvp-card-description">Open-source mapping with Leaflet library and OpenStreetMap tiles. Lightweight and customizable.</p>
+                    <span class="mvp-card-badge badge-free">No API Key Required</span>
+                </div>
+            </a>
 
-    <script src="app.js"></script>
-    <!-- Google Maps API with Geometry Library for road calculations -->
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap&libraries=geometry">
-    </script>
+            <a href="/google-map/" class="mvp-card card-google">
+                <div class="mvp-card-icon">🌐</div>
+                <div class="mvp-card-content">
+                    <h2 class="mvp-card-title">Google Maps</h2>
+                    <p class="mvp-card-description">Full-featured Google Maps integration with Directions API for road-following routes.</p>
+                    <span class="mvp-card-badge badge-api-key">API Key Required</span>
+                </div>
+            </a>
+
+            <a href="/mapbox-map/" class="mvp-card card-mapbox">
+                <div class="mvp-card-icon">🎨</div>
+                <div class="mvp-card-content">
+                    <h2 class="mvp-card-title">Mapbox GL</h2>
+                    <p class="mvp-card-description">Beautiful, customizable vector maps with WebGL-powered rendering for smooth interactions.</p>
+                    <span class="mvp-card-badge badge-api-key">API Key Required</span>
+                </div>
+            </a>
+
+            <a href="/openlayers-map/" class="mvp-card card-openlayers">
+                <div class="mvp-card-icon">🔷</div>
+                <div class="mvp-card-content">
+                    <h2 class="mvp-card-title">OpenLayers</h2>
+                    <p class="mvp-card-description">High-performance open-source library for displaying map data with extensive features.</p>
+                    <span class="mvp-card-badge badge-free">No API Key Required</span>
+                </div>
+            </a>
+
+            <a href="/tomtom-map/" class="mvp-card card-tomtom">
+                <div class="mvp-card-icon">🚗</div>
+                <div class="mvp-card-content">
+                    <h2 class="mvp-card-title">TomTom Maps</h2>
+                    <p class="mvp-card-description">Professional navigation-grade maps with traffic data and routing capabilities.</p>
+                    <span class="mvp-card-badge badge-api-key">API Key Required</span>
+                </div>
+            </a>
+
+            <a href="/uber-mvp/" class="mvp-card card-uber">
+                <div class="mvp-card-icon">🚀</div>
+                <div class="mvp-card-content">
+                    <h2 class="mvp-card-title">Uber MVP</h2>
+                    <p class="mvp-card-description">Uber-style location monitoring with advanced vehicle tracking and route playback features.</p>
+                    <span class="mvp-card-badge badge-free">No API Key Required</span>
+                </div>
+            </a>
+        </div>
+
+        <footer class="landing-footer">
+            <p>Location Monitoring System - Select a map provider to get started</p>
+        </footer>
+    </div>
 </body>
 </html>

@@ -43,9 +43,13 @@ location-monitoring/
 │   ├── leaflet-map/        # Leaflet MVP (alternative, no API key needed)
 │   │   ├── index.html
 │   │   └── app.js
-│   └── openlayers-map/     # OpenLayers MVP (alternative, no API key needed)
+│   ├── openlayers-map/     # OpenLayers MVP (alternative, no API key needed)
+│   │   ├── index.html
+│   │   └── app.js
+│   └── here-map/           # HERE Maps MVP (professional automotive-grade)
 │       ├── index.html
-│       └── app.js
+│       ├── app.js
+│       └── README.md       # HERE Maps setup guide
 ├── package.json
 ├── README.md
 └── QUICKSTART.md
@@ -53,7 +57,7 @@ location-monitoring/
 
 ## 🗺️ Map Alternatives
 
-This project includes **six** map implementations:
+This project includes **seven** map implementations:
 
 ### 🚗 **NEW: Uber MVP** (`public/uber-mvp/`)
    - **✅ Complete Feature Replication** - Implements all core functionality
@@ -84,6 +88,16 @@ This project includes **six** map implementations:
    - **✅ Progressive enhancement** - Shows results immediately, enhances with road-snapping
    - 📖 Setup: See [README.md](public/mapbox-map/README.md)
    - 🔗 Access: `http://localhost:3000/mapbox-map/`
+
+### 🌟 **HERE Maps MVP** (`public/here-map/`)
+   - **✅ Professional Automotive-Grade** - Used by Audi, BMW, Mercedes-Benz
+   - **✅ High-Quality Routing** - Industry-standard road network accuracy
+   - **✅ 250,000 free requests/month** - Generous free tier, no credit card required
+   - **✅ Up to 150 waypoints** - Handles complex routes efficiently
+   - **✅ Multiple Transport Modes** - Car, pedestrian, bicycle, truck
+   - **✅ Enterprise-Grade** - Trusted by automotive industry
+   - 📖 Setup: See [README.md](public/here-map/README.md)
+   - 🔗 Access: `http://localhost:3000/here-map/`
 
 ### Other Alternatives:
 
@@ -149,6 +163,11 @@ The Uber MVP represents a complete replication of all existing functionality in 
    - Replace `YOUR_TOMTOM_API_KEY` with your token
    - See detailed guide: [README.md](public/tomtom-map/README.md)
 
+   **OR For HERE Maps (Professional automotive-grade):**
+   - Open `public/here-map/app.js`
+   - Replace `YOUR_HERE_API_KEY` with your token
+   - See detailed guide: [README.md](public/here-map/README.md)
+
    **OR For Mapbox:**
    - Open `public/mapbox-map/app.js`
    - Replace `YOUR_MAPBOX_ACCESS_TOKEN` with your token
@@ -178,6 +197,9 @@ The Uber MVP represents a complete replication of all existing functionality in 
    
    # OR TomTom MVP (RECOMMENDED - Professional routing)
    http://localhost:3000/tomtom-map/
+   
+   # OR HERE Maps MVP (Automotive-grade mapping)
+   http://localhost:3000/here-map/
    
    # OR Mapbox MVP (Best road matching)
    http://localhost:3000/mapbox-map/

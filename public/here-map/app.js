@@ -299,7 +299,8 @@ function drawRoutePolyline(locations) {
 async function fetchRoadSnappedRoute(locations) {
     try {
         // HERE Routing API has limits, so we'll sample points if too many
-        const maxPoints = 50; // HERE allows up to 150 waypoints but we'll be conservative
+        // Using 50 instead of max 150 for better API response time and reliability
+        const maxPoints = 50;
         let sampledLocations = locations;
         
         if (locations.length > maxPoints) {

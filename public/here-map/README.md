@@ -31,7 +31,7 @@ This implementation uses **HERE Maps** - a professional mapping platform widely 
 ### 2. Configure the Application
 
 1. Open `public/here-map/app.js`
-2. Find line 20: `const HERE_API_KEY = 'YOUR_HERE_API_KEY';`
+2. Find the line: `const HERE_API_KEY = 'YOUR_HERE_API_KEY';`
 3. Replace `YOUR_HERE_API_KEY` with your actual API key:
    ```javascript
    const HERE_API_KEY = 'your-actual-api-key-here';

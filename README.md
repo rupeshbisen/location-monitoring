@@ -19,20 +19,27 @@ A location monitoring web application that visualizes location data on an intera
 location-monitoring/
 ├── backend/
 │   ├── server.js           # Node.js HTTP server with REST API
-│   └── location_data.json  # JSON file database for location data
+│   ├── location_data.json  # JSON file database for location data
+│   └── API_EXAMPLES.md     # API usage examples
 ├── public/
 │   ├── index.html          # Main HTML file (Google Maps)
 │   ├── app.js              # JavaScript logic and Google Maps integration
 │   ├── style.css           # CSS styling (shared)
+│   ├── google-map/         # Google Maps implementation
+│   │   ├── index.html
+│   │   ├── app.js
+│   │   └── README.md       # Google Maps setup guide
 │   ├── uber-mvp/           # 🚗 Uber MVP (NEW - Complete feature replication)
 │   │   ├── index.html
 │   │   └── app.js
 │   ├── tomtom-map/         # 🌟 TomTom MVP (Professional routing)
 │   │   ├── index.html
-│   │   └── app.js
+│   │   ├── app.js
+│   │   └── README.md       # TomTom complete guide
 │   ├── mapbox-map/         # Mapbox MVP (Alternative - Best road matching)
 │   │   ├── index.html
-│   │   └── app.js
+│   │   ├── app.js
+│   │   └── README.md       # Mapbox setup guide
 │   ├── leaflet-map/        # Leaflet MVP (alternative, no API key needed)
 │   │   ├── index.html
 │   │   └── app.js
@@ -41,11 +48,7 @@ location-monitoring/
 │       └── app.js
 ├── package.json
 ├── README.md
-├── QUICKSTART.md
-├── API_EXAMPLES.md
-├── GOOGLE_MAPS_SETUP.md
-├── MAPBOX_SETUP.md         # Mapbox MVP setup guide
-└── TOMTOM_GUIDE.md         # TomTom MVP complete guide
+└── QUICKSTART.md
 ```
 
 ## 🗺️ Map Alternatives
@@ -70,7 +73,7 @@ This project includes **six** map implementations:
    - **✅ Multiple Routing Profiles** - Car, pedestrian, bicycle, taxi, bus, van, motorcycle, truck
    - **✅ Up to 150 waypoints** - Handles long routes efficiently
    - **✅ Traffic-Aware Routing** - Real-time traffic data integration
-   - 📖 Setup: See [TOMTOM_GUIDE.md](TOMTOM_GUIDE.md)
+   - 📖 Setup: See [README.md](public/tomtom-map/README.md)
    - 🔗 Access: `http://localhost:3000/tomtom-map/`
 
 ### 🌟 **Mapbox MVP** (`public/mapbox-map/`)
@@ -79,7 +82,7 @@ This project includes **six** map implementations:
    - **✅ 50,000 free requests/month** - No credit card required
    - **✅ Batch processing** - Handles 100 points per request
    - **✅ Progressive enhancement** - Shows results immediately, enhances with road-snapping
-   - 📖 Setup: See [MAPBOX_SETUP.md](MAPBOX_SETUP.md)
+   - 📖 Setup: See [README.md](public/mapbox-map/README.md)
    - 🔗 Access: `http://localhost:3000/mapbox-map/`
 
 ### Other Alternatives:
@@ -128,7 +131,7 @@ The Uber MVP represents a complete replication of all existing functionality in 
    - Get your [Access Token](https://account.mapbox.com/access-tokens/)
    - Open `public/mapbox-map/app.js`
    - Replace `YOUR_MAPBOX_ACCESS_TOKEN` with your token
-   - See detailed guide: [MAPBOX_SETUP.md](MAPBOX_SETUP.md)
+   - See detailed guide: [README.md](public/mapbox-map/README.md)
 
    **OR**
 
@@ -144,12 +147,12 @@ The Uber MVP represents a complete replication of all existing functionality in 
    **For TomTom (Recommended for accurate routing):**
    - Open `public/tomtom-map/app.js`
    - Replace `YOUR_TOMTOM_API_KEY` with your token
-   - See detailed guide: [TOMTOM_GUIDE.md](TOMTOM_GUIDE.md)
+   - See detailed guide: [README.md](public/tomtom-map/README.md)
 
    **OR For Mapbox:**
    - Open `public/mapbox-map/app.js`
    - Replace `YOUR_MAPBOX_ACCESS_TOKEN` with your token
-   - See detailed guide: [MAPBOX_SETUP.md](MAPBOX_SETUP.md)
+   - See detailed guide: [README.md](public/mapbox-map/README.md)
 
    **OR For Google Maps:**
    - Open `public/index.html`
@@ -343,5 +346,5 @@ Rupesh Bisen
 ## 📚 Documentation
 
 - **Quick Start**: [QUICKSTART.md](QUICKSTART.md)
-- **API Reference**: [API_EXAMPLES.md](API_EXAMPLES.md)
-- **Google Maps Setup**: [GOOGLE_MAPS_SETUP.md](GOOGLE_MAPS_SETUP.md)
+- **API Reference**: [API_EXAMPLES.md](backend/API_EXAMPLES.md)
+- **Google Maps Setup**: [README.md](public/google-map/README.md)

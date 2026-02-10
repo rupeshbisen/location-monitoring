@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HERE Location Monitoring - MVP</title>
+    
+    <!-- HERE Maps API -->
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+    
+    <!-- Shared styles -->
+    <link rel="stylesheet" href="../style.css">
+    
+    <style>
+        /* HERE MVP specific styles */
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-left: 0;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .loading-overlay.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #00AFAA;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Route selector */
+        .route-select {
+            margin: 10px 0;
+        }
+        
+        .route-select select {
+            padding: 8px 12px;
+            border: 2px solid #00AFAA;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .route-select select:focus {
+            outline: none;
+            border-color: #008C89;
+        }
+        
+        /* Info panel */
+        .info-panel {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .info-panel h4 {
+            margin: 0 0 10px 0;
+            color: #00AFAA;
+        }
+        
+        .info-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .info-item strong {
+            color: #555;
+        }
+        
+        /* Map container wrapper */
+        .map-container {
+            position: relative;
+            margin-left: 320px;
+            width: calc(100% - 320px);
+            height: calc(100vh - 150px);
+            min-height: 500px;
+        }
+        
+        @media (max-width: 768px) {
+            .map-container {
+                margin-left: 0;
+                width: 100%;
+                height: 400px;
+            }
+            
+            #map {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+        }
+
+        .btn-primary {
+            background: #00AFAA;
+            border-color: #00AFAA;
+        }
+        
+        .btn-primary:hover {
+            background: #008C89;
+            border-color: #008C89;
+        }
+        
+        .stat-label {
+            color: #00AFAA;
+        }
+
+        /* Custom info bubble for markers */
+        .custom-info-bubble {
+            padding: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .custom-info-bubble .popup-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00AFAA;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #00AFAA;
+            padding-bottom: 5px;
+        }
+        
+        .custom-info-bubble .popup-info {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+        
+        .custom-info-bubble .popup-info strong {
+            color: #00AFAA;
+            display: inline-block;
+            min-width: 90px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ HERE Location Monitoring MVP</h1>
+            <p>Track and visualize location routes with professional automotive-grade mapping</p>
+        </header>
+
+        <div class="controls-panel">
+            <div class="filter-section">
+                <button id="loadDataBtn" class="btn btn-primary">🔄 Load Data</button>
+                <div class="route-select" id="routeSelectContainer" style="display: none;">
+                    <label for="routeSelect">Select Route:</label>
+                    <select id="routeSelect"></select>
+                </div>
+            </div>
+
+            <div class="info-panel" id="infoPanel" style="display: none;">
+                <h4>📊 Current Route Information</h4>
+                <div class="info-item"><strong>Route ID:</strong> <span id="currentRouteId">-</span></div>
+                <div class="info-item"><strong>Employee:</strong> <span id="currentEmployee">-</span></div>
+                <div class="info-item"><strong>Date:</strong> <span id="currentDate">-</span></div>
+                <div class="info-item"><strong>Duration:</strong> <span id="currentDuration">-</span></div>
+                <div class="info-item"><strong>Status:</strong> <span id="currentStatus">-</span></div>
+            </div>
+
+            <div class="playback-controls">
+                <h3>▶️ Playback Controls</h3>
+                <div class="controls-buttons">
+                    <button id="playBtn" class="btn btn-success" disabled>▶️ Play</button>
+                    <button id="pauseBtn" class="btn btn-warning" disabled>⏸️ Pause</button>
+                    <button id="resetBtn" class="btn btn-info" disabled>⏮️ Reset</button>
+                </div>
+                
+                <div class="speed-control">
+                    <label for="speedSlider">Speed: <span id="speedValue">1x</span></label>
+                    <input type="range" id="speedSlider" min="0.5" max="5" step="0.5" value="1">
+                </div>
+
+                <div class="timeline-control">
+                    <label for="timelineSlider">Timeline</label>
+                    <input type="range" id="timelineSlider" min="0" max="100" value="0" disabled>
+                    <div class="timeline-info">
+                        <span id="currentTime">00:00:00</span> / <span id="totalTime">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3>📈 Route Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Points:</span>
+                        <span id="totalPoints" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Distance:</span>
+                        <span id="routeDistance" class="stat-value">0 km</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Check-ins:</span>
+                        <span id="checkIns" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Check-outs:</span>
+                        <span id="checkOuts" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Visits:</span>
+                        <span id="visits" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Duration:</span>
+                        <span id="totalDuration" class="stat-value">0h 0m</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="legend-section">
+                <h3>🎨 Legend</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-icon check-in">📍</span>
+                        <span>Check-in</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon check-out">🏁</span>
+                        <span>Check-out</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon visit">🏢</span>
+                        <span>Visit</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon normal">📌</span>
+                        <span>Normal Point</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon normal" style="background: #00AFAA; border: 2px solid #008C89;">🚗</span>
+                        <span>Current Position</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div id="loadingText">Loading map data...</div>
+            </div>
+            <div id="map"></div>
+        </div>
+
+        <footer style="text-align: center; padding: 20px; color: #666; font-size: 14px;">
+            <p>HERE Location Monitoring MVP - Professional automotive-grade mapping</p>
+            <p>💡 API key required - Get your free key at <a href="https://developer.here.com" target="_blank">developer.here.com</a> (250K free requests/month)</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -46,10 +46,13 @@ location-monitoring/
 │   ├── openlayers-map/     # OpenLayers MVP (alternative, no API key needed)
 │   │   ├── index.html
 │   │   └── app.js
-│   └── here-map/           # HERE Maps MVP (professional automotive-grade)
+│   ├── here-map/           # HERE Maps MVP (professional automotive-grade)
+│   │   ├── index.html
+│   │   ├── app.js
+│   │   └── README.md       # HERE Maps setup guide
+│   └── azure-map/          # Azure Maps MVP (enterprise-grade Microsoft)
 │       ├── index.html
-│       ├── app.js
-│       └── README.md       # HERE Maps setup guide
+│       └── app.js
 ├── package.json
 ├── README.md
 └── QUICKSTART.md
@@ -57,7 +60,7 @@ location-monitoring/
 
 ## 🗺️ Map Alternatives
 
-This project includes **seven** map implementations:
+This project includes **eight** map implementations:
 
 ### 🚗 **NEW: Uber MVP** (`public/uber-mvp/`)
    - **✅ Complete Feature Replication** - Implements all core functionality
@@ -98,6 +101,15 @@ This project includes **seven** map implementations:
    - **✅ Enterprise-Grade** - Trusted by automotive industry
    - 📖 Setup: See [README.md](public/here-map/README.md)
    - 🔗 Access: `http://localhost:3000/here-map/`
+
+### ☁️ **Azure Maps MVP** (`public/azure-map/`)
+   - **✅ Enterprise-Grade Microsoft Azure** - Trusted by enterprises worldwide
+   - **✅ Accurate Road Routing** - Traffic-aware route directions
+   - **✅ Free tier available** - With Azure account
+   - **✅ Up to 150 waypoints** - Handles complex routes efficiently
+   - **✅ Multiple Travel Modes** - Car, pedestrian, bicycle, truck
+   - **✅ Map Style Switching** - Road, satellite, and hybrid views
+   - 🔗 Access: `http://localhost:3000/azure-map/`
 
 ### Other Alternatives:
 
@@ -168,6 +180,11 @@ The Uber MVP represents a complete replication of all existing functionality in 
    - Replace `YOUR_HERE_API_KEY` with your token
    - See detailed guide: [README.md](public/here-map/README.md)
 
+   **OR For Azure Maps (Enterprise-grade Microsoft):**
+   - Open `public/azure-map/app.js`
+   - Replace `YOUR_AZURE_MAPS_KEY` with your subscription key
+   - Get your key at: [Azure Maps Authentication](https://learn.microsoft.com/en-us/azure/azure-maps/how-to-manage-authentication)
+
    **OR For Mapbox:**
    - Open `public/mapbox-map/app.js`
    - Replace `YOUR_MAPBOX_ACCESS_TOKEN` with your token
@@ -200,6 +217,9 @@ The Uber MVP represents a complete replication of all existing functionality in 
    
    # OR HERE Maps MVP (Automotive-grade mapping)
    http://localhost:3000/here-map/
+   
+   # OR Azure Maps MVP (Enterprise-grade Microsoft)
+   http://localhost:3000/azure-map/
    
    # OR Mapbox MVP (Best road matching)
    http://localhost:3000/mapbox-map/

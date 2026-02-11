@@ -394,7 +394,7 @@ function updateInfoPanel(locations) {
     const duration = calculateDuration(startTime, endTime);
     
     document.getElementById('currentRouteId').textContent = currentRouteId;
-    document.getElementById('currentEmployee').textContent = currentRouteId;
+    document.getElementById('currentEmployee').textContent = currentRouteId; // Assuming routeId is employee name
     document.getElementById('currentDate').textContent = startTime.toLocaleDateString();
     document.getElementById('currentDuration').textContent = duration;
     document.getElementById('currentStatus').textContent = 'Active';

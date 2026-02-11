@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Maps Location Monitoring - MVP</title>
+    
+    <!-- Azure Maps SDK -->
+    <link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" type="text/css">
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+    
+    <!-- Shared styles -->
+    <link rel="stylesheet" href="../style.css">
+    
+    <style>
+        /* Azure Maps specific styles */
+        #map {
+            width: 100%;
+            height: 600px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Popup styles */
+        .popup-content {
+            padding: 15px;
+            max-width: 300px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .popup-info {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .popup-info strong {
+            color: #0078D4;
+            display: inline-block;
+            min-width: 100px;
+        }
+        
+        .popup-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #0078D4;
+            padding-bottom: 5px;
+        }
+        
+        /* API key banner */
+        .api-key-banner {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .api-key-banner a {
+            color: #0056b3;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        .api-key-banner a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .loading-overlay.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0078D4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Route selector */
+        .route-select {
+            margin: 10px 0;
+        }
+        
+        .route-select select {
+            padding: 8px 12px;
+            border: 2px solid #0078D4;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .route-select select:focus {
+            outline: none;
+            border-color: #005a9e;
+        }
+        
+        /* Info panel */
+        .info-panel {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .info-panel h4 {
+            margin: 0 0 10px 0;
+            color: #0078D4;
+        }
+        
+        .info-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .info-item strong {
+            color: #555;
+        }
+        
+        /* Custom marker styles */
+        .custom-marker {
+            font-size: 28px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .custom-marker:hover {
+            transform: scale(1.2);
+        }
+        
+        .vehicle-marker {
+            font-size: 32px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ Azure Maps Location Monitoring MVP</h1>
+            <p>Professional location tracking with Azure Maps road-accurate routing and playback controls</p>
+        </header>
+
+        <div class="api-key-banner" id="apiKeyBanner">
+            ⚠️ <strong>API Key Required:</strong> 
+            Please add your Azure Maps subscription key in the app.js file. 
+            <a href="https://learn.microsoft.com/en-us/azure/azure-maps/how-to-manage-authentication" target="_blank">Get your Azure Maps key here</a> 
+            (Free tier available with Azure account)
+        </div>
+
+        <div class="controls-panel">
+            <div class="filter-section">
+                <button id="loadDataBtn" class="btn btn-primary">🔄 Load Data</button>
+                <div class="route-select" id="routeSelectContainer" style="display: none;">
+                    <label for="routeSelect">Select Route:</label>
+                    <select id="routeSelect"></select>
+                </div>
+            </div>
+
+            <div class="info-panel" id="infoPanel" style="display: none;">
+                <h4>📊 Current Route Information</h4>
+                <div class="info-item"><strong>Route ID:</strong> <span id="currentRouteId">-</span></div>
+                <div class="info-item"><strong>Employee:</strong> <span id="currentEmployee">-</span></div>
+                <div class="info-item"><strong>Date:</strong> <span id="currentDate">-</span></div>
+                <div class="info-item"><strong>Duration:</strong> <span id="currentDuration">-</span></div>
+                <div class="info-item"><strong>Status:</strong> <span id="currentStatus">-</span></div>
+            </div>
+
+            <div class="playback-controls">
+                <h3>▶️ Playback Controls</h3>
+                <div class="controls-buttons">
+                    <button id="playBtn" class="btn btn-success" disabled>▶️ Play</button>
+                    <button id="pauseBtn" class="btn btn-warning" disabled>⏸️ Pause</button>
+                    <button id="resetBtn" class="btn btn-info" disabled>⏮️ Reset</button>
+                </div>
+                
+                <div class="speed-control">
+                    <label for="speedSlider">Speed: <span id="speedValue">1x</span></label>
+                    <input type="range" id="speedSlider" min="0.5" max="5" step="0.5" value="1">
+                </div>
+
+                <div class="timeline-control">
+                    <label for="timelineSlider">Timeline</label>
+                    <input type="range" id="timelineSlider" min="0" max="100" value="0" disabled>
+                    <div class="timeline-info">
+                        <span id="currentTime">00:00:00</span> / <span id="totalTime">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3>📈 Route Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Points:</span>
+                        <span id="totalPoints" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Distance:</span>
+                        <span id="routeDistance" class="stat-value">0 km</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Check-ins:</span>
+                        <span id="checkIns" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Check-outs:</span>
+                        <span id="checkOuts" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Visits:</span>
+                        <span id="visits" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Duration:</span>
+                        <span id="totalDuration" class="stat-value">0h 0m</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="legend-section">
+                <h3>🎨 Legend</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-icon check-in">📍</span>
+                        <span>Check-in</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon check-out">🏁</span>
+                        <span>Check-out</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon visit">🏢</span>
+                        <span>Visit</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon normal">📌</span>
+                        <span>Normal Point</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon normal" style="background: #0078D4;">🚗</span>
+                        <span>Current Position</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="position: relative;">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div id="loadingText">Loading map data...</div>
+            </div>
+            <div id="map"></div>
+        </div>
+
+        <footer style="text-align: center; padding: 20px; color: #666; font-size: 14px;">
+            <p>Azure Maps MVP - Professional location monitoring with accurate road routing</p>
+            <p>💡 Azure Maps provides enterprise-grade mapping and routing services</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

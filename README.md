@@ -311,25 +311,6 @@ curl "http://localhost:3000/api/locations?startDate=2026-01-01&endDate=2026-01-3
    - View total points, total distance, check-ins, check-outs, and visits
    - Statistics update automatically when data is loaded
 
-## 📊 Data Format
-
-Location data is stored in `backend/location_data.json`. Each location point contains:
-
-```json
-[
-  21.090064,          // latitude
-  79.091735,          // longitude
-  "Address string",   // address (optional)
-  "-",                // reserved
-  "-",                // reserved
-  null,               // reserved
-  "RouteId",          // route identifier
-  "2026-01-12T09:20:00.000Z",  // timestamp (ISO format)
-  ".",                // reserved
-  "normal"            // flag: check_in, check_out, visit, or normal
-]
-```
-
 ## 🎨 Customization
 
 ### Changing Map Styles
